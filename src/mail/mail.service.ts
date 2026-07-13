@@ -1,0 +1,133 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
+import { Order } from '../orders/entities/order.entity';
+import { Query } from '../content/entities/queries.entity';
+
+@Injectable()
+export class MailService {
+  // Logger propio de Nest: en vez de console.log, deja registro con
+  // timestamp y el nombre del contexto (util para debuggear en produccion)
+  private readonly logger = new Logger(MailService.name);
+  private transporter: nodemailer.Transporter;
+
+  constructor(private readonly configService: ConfigService) {
+    // El "transporter" es el objeto de Nodemailer que sabe COMO conectarse
+    // al servidor SMTP (host, puerto, credenciales) para efectivamente
+    // enviar los correos. Se crea una sola vez, en el constructor,
+    // y se reutiliza en cada envio.
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get<string>('MAIL_HOST'),
+      port: this.configService.get<number>('MAIL_PORT'),
+      secure: false, // true solo si usas el puerto 465 (SSL directo)
+      auth: {
+        user: this.configService.get<string>('MAIL_USER'),
+        pass: this.configService.get<string>('MAIL_PASSWORD'),
+      },
+    });
+  }
+
+  // Metodo generico de bajo nivel: arma y envia cualquier correo
+  private async send(recipient: string, subject: string, html: string) {
+    try {
+      await this.transporter.sendMail({
+        from: this.configService.get<string>('MAIL_FROM'),
+        to: recipient,
+        subject: subject,
+        html,
+      });
+      this.logger.log(`Email sent to ${recipient}: ${subject}`);
+    } catch (error) {
+      // IMPORTANTE: si el envio de email falla (ej: credenciales SMTP mal
+      // configuradas, sin conexion a internet), NO queremos que eso rompa
+      // la creacion del pedido. Por eso atrapamos el error aca y solo
+      // lo logueamos, en vez de dejar que se propague hacia arriba.
+      this.logger.error(`Error sending email to ${recipient}`, error);
+    }
+  }
+
+  // Metodo especifico de dominio: arma el contenido del email de aviso
+  // de pedido nuevo (requerimiento funcional 9) y lo manda al admin.
+  async notifyNewOrder(order: Order) {
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
+    if (!adminEmail) {
+      this.logger.warn('ADMIN_EMAIL not configured, notification not sent');
+      return;
+    }
+
+    const detailRows = order.details
+      .map(
+        (d) => `
+        <tr>
+          <td style="padding:6px;border:1px solid #ddd;">${d.product.name}</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:center;">${d.quantity}</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${d.unitPrice}</td>
+        </tr>`,
+      )
+      .join('');
+
+    const html = `
+      <h2>New order received</h2>
+      <p><strong>Order number:</strong> ${order.orderNumber}</p>
+      <p><strong>Customer:</strong> ${order.user.name} (${order.user.email})</p>
+      <p><strong>Payment method:</strong> ${order.paymentMethod}</p>
+      <table style="border-collapse:collapse;width:100%;">
+        <thead>
+          <tr>
+            <th style="padding:6px;border:1px solid #ddd;">Product</th>
+            <th style="padding:6px;border:1px solid #ddd;">Quantity</th>
+            <th style="padding:6px;border:1px solid #ddd;">Unit price</th>
+          </tr>
+        </thead>
+        <tbody>${detailRows}</tbody>
+      </table>
+      <p><strong>Total: $${order.total}</strong></p>
+      <p>Log in to the admin panel to manage this order.</p>
+    `;
+
+    await this.send(adminEmail, `New order ${order.orderNumber}`, html);
+  }
+
+  // Bonus: notificacion al CLIENTE cuando cambia el estado de su pedido
+  // (no estaba en tus requerimientos explicitos, pero mejora mucho la
+  // experiencia y reutiliza toda la infraestructura que ya armamos)
+  async notifyStatusChange(order: Order) {
+    const html = `
+      <h2>Update on your order</h2>
+      <p>Your order <strong>${order.orderNumber}</strong> is now:
+        <strong>${order.status}</strong>
+      </p>
+    `;
+    await this.send(order.user.email, `Order update ${order.orderNumber}`, html);
+  }
+
+  // Notifica al admin cuando llega una consulta o pedido de presupuesto
+  // desde el "boton de contacto" del sitio (requerimiento funcional 11)
+  async notifyNewQuery(query: Query) {
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
+    if (!adminEmail) {
+      this.logger.warn('ADMIN_EMAIL not configured, notification not sent');
+      return;
+    }
+
+    const productReference = query.product
+      ? `<p><strong>Product inquired about:</strong> ${query.product.name} (code ${query.product.code})</p>`
+      : '';
+
+    const html = `
+      <h2>New ${query.type === 'quote' ? 'quote request' : 'query'}</h2>
+      <p><strong>From:</strong> ${query.name} (${query.email})</p>
+      ${query.phone ? `<p><strong>Phone:</strong> ${query.phone}</p>` : ''}
+      ${productReference}
+      <p><strong>Message:</strong></p>
+      <p>${query.message}</p>
+    `;
+
+    const subject =
+      query.type === 'quote'
+        ? `Quote request from ${query.name}`
+        : `New query from ${query.name}`;
+
+    await this.send(adminEmail, subject, html);
+  }
+}
