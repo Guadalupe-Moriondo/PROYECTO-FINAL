@@ -25,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   // que la firma del token es valida. El "payload" es lo que guardamos
   // al firmar el token en auth.service.ts (login).
   // Lo que retornamos aca queda disponible como `request.user` en los controllers.
-  async validate(payload: { sub: number; email: string; rol: string }) {
-    return { id: payload.sub, email: payload.email, rol: payload.rol };
+  async validate(payload: { sub: number; email: string; role: string }) {
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }

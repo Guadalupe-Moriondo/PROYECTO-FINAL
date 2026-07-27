@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException,BadRequestException } from '@nestjs/common';
 import { CartRepository } from './cart.repository';
 import { ProductsRepository } from '../products/products.repository';
 import { AddItemDto } from './dto/add-item.dto';
@@ -27,16 +27,26 @@ export class CartService {
   }
 
   async addItem(userId: number, dto: AddItemDto) {
-    const product = await this.productsRepository.findOneBy({ id: dto.productId });
+    const product = await this.productsRepository.findOneBy({ id: dto.productId, active:true, });
     if (!product) throw new NotFoundException('Product not found');
+    if (product.stock < dto.quantity) {throw new BadRequestException('Insufficient stock');}
+
 
     const cart = await this.getOrCreate(userId);
     const existingItem = cart.items.find((i) => i.product.id === dto.productId);
 
     if (existingItem) {
-      existingItem.quantity += dto.quantity;
+    if (existingItem.quantity + dto.quantity > product.stock) {
+      throw new BadRequestException('Insufficient stock');
+    }
+
+    existingItem.quantity += dto.quantity;
     } else {
-      cart.items.push({ product, quantity: dto.quantity } as any);
+    if (dto.quantity > product.stock) {
+      throw new BadRequestException('Insufficient stock');
+    }
+
+    cart.items.push({ product, quantity: dto.quantity } as any);
     }
 
     // Gracias a cascade:true en la relacion OneToMany, save() en el carrito
@@ -49,7 +59,10 @@ export class CartService {
     const cart = await this.getOrCreate(userId);
     const item = cart.items.find((i) => i.id === itemId);
     if (!item) throw new NotFoundException('Item not found in cart');
-
+    if (quantity <= 0) {throw new BadRequestException('Quantity must be greater than zero');}
+    if (!item.product.active) {throw new BadRequestException('Product is no longer available');}
+    if (quantity > item.product.stock) {throw new BadRequestException('Insufficient stock');}
+    
     item.quantity = quantity;
     const saved = await this.cartRepository.save(cart);
     return this.calculateTotals(saved);

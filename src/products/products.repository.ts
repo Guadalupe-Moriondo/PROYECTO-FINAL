@@ -18,13 +18,27 @@ export class ProductsRepository extends Repository<Product> {
       .leftJoinAndSelect('product.category', 'category')
       .where('product.active = :active', { active: true });
 
-    if (filters.name) {
-      // busca coincidencia parcial en nombre O en codigo
-      query.andWhere(
-        '(product.name LIKE :name OR product.code LIKE :name)',
-        { name: `%${filters.name}%` },
+      if (filters.name) {
+        const search = filters.name
+          .trim()
+          .toLowerCase()
+          .replace(/s$/, '');
+
+        query.andWhere(
+        `(
+          LOWER(product.name) LIKE :search
+          OR LOWER(product.code) LIKE :search
+          OR LOWER(product.brand) LIKE :search
+          OR LOWER(product.description) LIKE :search
+          OR LOWER(category.name) LIKE :search
+        )`,
+        {
+          search: `%${search}%`,
+        },
       );
     }
+
+    
 
     if (filters.brand) {
       query.andWhere('product.brand LIKE :brand', { brand: `%${filters.brand}%` });

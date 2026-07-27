@@ -17,8 +17,12 @@ export class CategoriesService {
   }
 
   findAll() {
-    return this.categoriesRepository.find();
-  }
+  return this.categoriesRepository.find({
+    where: {
+      active: true,
+    },
+    });
+  } 
 
   async findOne(id: number) {
     const category = await this.categoriesRepository.findOneBy({ id });
@@ -35,7 +39,8 @@ export class CategoriesService {
   }
 
   async remove(id: number) {
-    const category = await this.findOne(id);
-    return this.categoriesRepository.remove(category);
-  }
+  const category = await this.findOne(id);
+  category.active = false;
+  return this.categoriesRepository.save(category);
+}
 }

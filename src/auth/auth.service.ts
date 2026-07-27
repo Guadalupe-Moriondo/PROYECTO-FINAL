@@ -18,12 +18,12 @@ export class AuthService {
     // como si la contraseña es incorrecta. Esto evita que un atacante
     // pueda deducir que emails estan registrados (enumeration attack).
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const validPassword = await bcrypt.compare(dto.password, user.passwordHash);
     if (!validPassword) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // El "payload" es la informacion que va DENTRO del token (no sensible,

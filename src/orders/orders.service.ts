@@ -11,6 +11,8 @@ import { MailService } from '../mail/mail.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { buildPaginatedResult, PaginationQueryDto } from '../common/pagination';
+import { OrderStatus } from './entities/order.entity';
+
 
 @Injectable()
 export class OrdersService {
@@ -63,6 +65,7 @@ export class OrdersService {
           .createQueryBuilder('product')
           .setLock('pessimistic_write')
           .where('product.id = :id', { id: item.product.id })
+          .andWhere('product.active = :active', { active: true })
           .getOne();
 
         if (!product) {
@@ -115,7 +118,7 @@ export class OrdersService {
     // enviar un correo no es algo que se pueda "revertir" como un UPDATE,
     // y no tiene sentido mantener bloqueado el producto en la BD mientras
     // esperamos que responda un servidor SMTP externo.
-    this.mailService.notifyNewOrder(savedOrder);
+    void this.mailService.notifyNewOrder(savedOrder);
 
     return savedOrder;
   }
@@ -134,6 +137,21 @@ export class OrdersService {
     return buildPaginatedResult(data, total, page, limit);
   }
 
+  // Historial: pedidos ya entregados. Una vez que un pedido llega a este
+  // estado, desaparece de findAll() y solo se puede consultar por aca.
+  // "month" ("YYYY-MM") o "year" ("YYYY") filtran por periodo puntual.
+  async findDelivered(pagination: PaginationQueryDto, month?: string, year?: string) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const [data, total] = await this.ordersRepository.findDeliveredPaginated(
+      page,
+      limit,
+      month,
+      year,
+    );
+    return buildPaginatedResult(data, total, page, limit);
+  }
+
   async findOne(id: number) {
     const order = await this.ordersRepository.findOneBy({ id });
     if (!order) throw new NotFoundException('Order not found');
@@ -147,8 +165,51 @@ export class OrdersService {
 
     // Aviso "bonus" al cliente. Mismo criterio: no bloqueante, no rompe
     // la respuesta HTTP si el email falla.
-    this.mailService.notifyStatusChange(updated);
+    void this.mailService.notifyStatusChange(updated);
 
     return updated;
   }
+
+  async getStatistics() {
+  const delivered = await this.ordersRepository.find({
+    where: { status: OrderStatus.DELIVERED },
+  });
+
+  const now = new Date();
+
+  const monthly = {};
+  const yearly = {};
+
+  delivered.forEach(order => {
+    const date = new Date(order.createdAt);
+
+    const monthKey = `${date.getFullYear()}-${String(
+      date.getMonth() + 1,
+    ).padStart(2, '0')}`;
+
+    const yearKey = `${date.getFullYear()}`;
+
+    monthly[monthKey] ??= {
+      orders: 0,
+      total: 0,
+    };
+
+    yearly[yearKey] ??= {
+      orders: 0,
+      total: 0,
+    };
+
+    monthly[monthKey].orders++;
+    monthly[monthKey].total += Number(order.total);
+
+    yearly[yearKey].orders++;
+    yearly[yearKey].total += Number(order.total);
+  });
+
+  return {
+    delivered,
+    monthly,
+    yearly,
+  };
+}
 }

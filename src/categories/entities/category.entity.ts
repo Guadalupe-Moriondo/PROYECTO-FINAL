@@ -15,6 +15,9 @@ export class Category {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
+  @Column({ default: true })
+  active!: boolean;
+
   // Relacion 1 a muchos: una categoria tiene muchos productos.
   // El segundo argumento es una funcion que apunta a la propiedad
   // inversa en la otra entidad (producto.categoria)
@@ -25,7 +28,7 @@ export class Category {
   // Se calcula con una sub-consulta cada vez que se trae la entidad
   // a traves de `findWithProductCount()`.
   @VirtualColumn({
-    query: (alias) => `SELECT COUNT(*) FROM products WHERE products.category_id = ${alias}.id`,
+    query: (alias) => `SELECT COUNT(*) FROM products WHERE products.category_id = ${alias}.id AND products.active = true`,
   })
   productCount!: number;
 }

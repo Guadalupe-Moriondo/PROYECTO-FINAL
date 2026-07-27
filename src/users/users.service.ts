@@ -13,7 +13,7 @@ export class UsersService {
   async create(dto: CreateUserDto) {
     const existing = await this.usersRepository.findByEmail(dto.email);
     if (existing) {
-      throw new ConflictException('A user with that email is already registered');
+      throw new ConflictException('Correo electrónico inválido');
     }
 
     // bcrypt.hash genera un hash irreversible de la contraseña.
@@ -35,7 +35,7 @@ export class UsersService {
 
   async findOne(id: number) {
     const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('Usuario no encontrado');
     const { passwordHash: _, ...result } = user;
     return result;
   }
@@ -51,12 +51,12 @@ export class UsersService {
   // para cambiar un rol, y esta protegido por RolesGuard en el controller.
   async updateRole(id: number, newRole: UserRole, requestedBy: { id: number }) {
     const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     if (user.id === requestedBy.id && newRole !== UserRole.ADMIN) {
       // Evita que un admin se auto-degrade por error y se quede afuera
       // del panel sin querer (y sin que quede ya ningun otro admin activo)
-      throw new ConflictException('You cannot remove your own administrator role');
+      throw new ConflictException('No puedes eliminar tu propio rol de administrador.');
     }
 
     user.role = newRole;

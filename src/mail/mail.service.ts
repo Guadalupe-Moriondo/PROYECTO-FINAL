@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Order } from '../orders/entities/order.entity';
-import { Query } from '../content/entities/queries.entity';
+
 
 @Injectable()
 export class MailService {
@@ -101,33 +101,5 @@ export class MailService {
     await this.send(order.user.email, `Order update ${order.orderNumber}`, html);
   }
 
-  // Notifica al admin cuando llega una consulta o pedido de presupuesto
-  // desde el "boton de contacto" del sitio (requerimiento funcional 11)
-  async notifyNewQuery(query: Query) {
-    const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
-    if (!adminEmail) {
-      this.logger.warn('ADMIN_EMAIL not configured, notification not sent');
-      return;
-    }
-
-    const productReference = query.product
-      ? `<p><strong>Product inquired about:</strong> ${query.product.name} (code ${query.product.code})</p>`
-      : '';
-
-    const html = `
-      <h2>New ${query.type === 'quote' ? 'quote request' : 'query'}</h2>
-      <p><strong>From:</strong> ${query.name} (${query.email})</p>
-      ${query.phone ? `<p><strong>Phone:</strong> ${query.phone}</p>` : ''}
-      ${productReference}
-      <p><strong>Message:</strong></p>
-      <p>${query.message}</p>
-    `;
-
-    const subject =
-      query.type === 'quote'
-        ? `Quote request from ${query.name}`
-        : `New query from ${query.name}`;
-
-    await this.send(adminEmail, subject, html);
-  }
+  
 }

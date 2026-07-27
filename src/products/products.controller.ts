@@ -25,6 +25,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
+import { Patch } from '@nestjs/common';
+
 
 // Tipos de archivo permitidos para las imagenes de productos
 const ALLOWED_IMAGE_TYPES = /\.(jpg|jpeg|png|webp)$/i;
@@ -73,6 +75,8 @@ export class ProductsController {
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
     return this.productsService.update(id, dto);
   }
+
+  
 
   // Endpoint dedicado para subir/reemplazar la foto de un producto.
   // Separado del PUT general porque este recibe multipart/form-data

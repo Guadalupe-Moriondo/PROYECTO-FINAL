@@ -79,14 +79,14 @@ async function bootstrap() {
   // Habilita CORS para que el frontend (Vue.js) pueda consumir la API
   // desde otro origen (otro puerto/dominio) durante el desarrollo.
   app.enableCors();
-
+  
   // Sirve la carpeta /uploads como archivos estaticos: cualquier imagen
   // guardada ahi queda accesible via http://localhost:3000/uploads/...
   // Esto es lo que hace que la "imagenUrl" que guardamos en la BD
   // (ej: /uploads/productos/uuid.jpg) funcione como una URL real.
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads',
-  });
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+  prefix: '/uploads/',
+});
 
   // ValidationPipe global: valida automaticamente todos los DTOs marcados
   // con class-validator antes de que lleguen al controller.

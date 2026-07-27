@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
-
+import{OrderHistoryQueryDto} from './dto/history-query.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
@@ -31,6 +31,22 @@ export class OrdersController {
     return this.ordersService.findAll(pagination);
   }
 
+  @Get('/statistics')
+  @Roles('admin')
+  getStatistics() {
+    return this.ordersService.getStatistics();
+  }
+
+  // Historial de pedidos entregados (requerimiento: los pedidos entregados
+  // desaparecen de "Pedidos" y quedan guardados aca). "month" es opcional,
+  // formato "YYYY-MM" (lo manda el <input type="month"> del frontend).
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Get('/history')
+  history(@Query() query: OrderHistoryQueryDto) {
+    return this.ordersService.findDelivered(query, query.month,query.year);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.findOne(id);
@@ -42,4 +58,7 @@ export class OrdersController {
   updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
     return this.ordersService.updateStatus(id, dto);
   }
+
+  
+
 }

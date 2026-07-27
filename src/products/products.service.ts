@@ -65,6 +65,7 @@ export class ProductsService {
     return this.productsRepository.save(product);
   }
 
+
   async remove(id: number) {
     // Baja logica en vez de borrado fisico: asi no se rompen pedidos historicos
     // que ya referencian este producto
