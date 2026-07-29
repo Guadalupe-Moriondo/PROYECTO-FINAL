@@ -12,6 +12,8 @@ import{OrderHistoryQueryDto} from './dto/history-query.dto';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @UseGuards(RolesGuard)
+  @Roles('customer')
   @Post()
   create(@Req() req: any, @Body() dto: CreateOrderDto) {
     return this.ordersService.createFromCart(req.user.id, dto);

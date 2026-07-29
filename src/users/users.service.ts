@@ -3,6 +3,8 @@ import * as bcrypt from 'bcrypt';
 import { UsersRepository } from './users.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserRole } from './entities/user.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 const SALT_ROUNDS = 10; // costo del hash: mas alto = mas seguro pero mas lento
 
@@ -64,4 +66,69 @@ export class UsersService {
     const { passwordHash: _, ...result } = saved;
     return result;
   }
+
+  async updateProfile(id: number, dto: UpdateProfileDto) {
+
+  const user = await this.usersRepository.findOneBy({ id });
+
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
+  }
+
+
+  if (dto.email && dto.email !== user.email) {
+
+    const existing = await this.usersRepository.findByEmail(dto.email);
+
+    if (existing && existing.id !== id) {
+      throw new ConflictException('El correo ya está registrado');
+    }
+  }
+
+
+  Object.assign(user, dto);
+
+  const saved = await this.usersRepository.save(user);
+
+  const { passwordHash: _, ...result } = saved;
+
+  return result;
+}
+
+async changePassword(id: number, dto: ChangePasswordDto) {
+  const user = await this.usersRepository.findOneBy({ id });
+
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
+  }
+
+  const passwordMatches = await bcrypt.compare(
+    dto.currentPassword,
+    user.passwordHash,
+  );
+
+  if (!passwordMatches) {
+    throw new ConflictException('La contraseña actual es incorrecta');
+  }
+
+  // Verifica que la nueva contraseña no sea igual a la actual
+  const samePassword = await bcrypt.compare(
+    dto.newPassword,
+    user.passwordHash,
+  );
+
+  if (samePassword) {
+    throw new ConflictException(
+      'La nueva contraseña debe ser diferente a la actual',
+    );
+  }
+
+  user.passwordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
+
+  await this.usersRepository.save(user);
+
+  return {
+    message: 'Contraseña actualizada correctamente',
+  };
+}
 }
