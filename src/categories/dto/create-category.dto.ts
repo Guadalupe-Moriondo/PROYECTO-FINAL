@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength, IsIn} from 'class-validator';
 
 // Los DTOs definen la "forma" de los datos que esperamos recibir
 // en el body de la peticion HTTP, y class-validator los valida
@@ -12,4 +12,9 @@ export class CreateCategoryDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['sembradoras', 'cosechadoras', 'otros'])
+  machineType!: string;
 }

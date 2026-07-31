@@ -15,8 +15,12 @@ export class Category {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
+  @Column({ length: 20, default: 'otros' })
+  machineType!: string;
+
   @Column({ default: true })
   active!: boolean;
+
 
   // Relacion 1 a muchos: una categoria tiene muchos productos.
   // El segundo argumento es una funcion que apunta a la propiedad
