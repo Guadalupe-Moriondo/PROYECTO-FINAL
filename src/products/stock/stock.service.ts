@@ -13,11 +13,11 @@ export class StockService {
 
   async registerMovement(dto: CreateMovementDto) {
     const product = await this.productsRepository.findOneBy({ id: dto.productId });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException('Producto no encontrado');
 
     // Si es una salida, verificamos que haya stock suficiente
     if (dto.type === MovementType.OUT && product.stock < dto.quantity) {
-    throw new BadRequestException('Insufficient stock');
+    throw new BadRequestException('Stock insuficiente.');
   }
 
     // La entrada suma stock, la salida resta

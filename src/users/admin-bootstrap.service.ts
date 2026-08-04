@@ -24,7 +24,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     const email = this.configService.get<string>('ADMIN_EMAIL');
     const password = this.configService.get<string>('ADMIN_SEED_PASSWORD');
-    const name = this.configService.get<string>('ADMIN_SEED_NAME') || 'Administrator';
+    const name = this.configService.get<string>('ADMIN_SEED_NAME') || 'Administrador';
 
     // Si no completaste estas variables en el .env, simplemente no hacemos
     // nada (no rompemos el arranque del servidor por esto)

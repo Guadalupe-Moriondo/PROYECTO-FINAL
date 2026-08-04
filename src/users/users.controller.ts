@@ -24,6 +24,13 @@ export class UsersController {
     return this.usersService.findOne(req.user.id);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  findAll() {
+      return this.usersService.findAll();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);

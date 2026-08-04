@@ -42,6 +42,87 @@ export class UsersService {
     return result;
   }
 
+  async findAll(page = 1, search = '') {
+
+    const limit = 10;
+
+    const query = this.usersRepository
+      .createQueryBuilder('user');
+
+
+    if (search) {
+
+      query.where(
+        'user.name ILIKE :search OR user.email ILIKE :search',
+        {
+          search: `%${search}%`,
+        }
+      );
+
+    }
+
+
+    const [items, total] =
+      await query
+        .orderBy('user.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getManyAndCount();
+
+
+
+    const totalUsers =
+      await this.usersRepository.count();
+
+
+
+    const totalAdmins =
+      await this.usersRepository.count({
+        where: {
+          role: UserRole.ADMIN,
+        },
+      });
+
+
+
+    const totalCustomers =
+      await this.usersRepository.count({
+        where: {
+          role: UserRole.CUSTOMER,
+        },
+      });
+
+
+
+    return {
+
+      items: items.map(user => {
+
+        const {
+          passwordHash,
+          ...safeUser
+        } = user;
+
+        return safeUser;
+
+      }),
+
+      total,
+
+      page,
+
+      limit,
+
+      statistics: {
+        totalUsers,
+        totalAdmins,
+        totalCustomers,
+      },
+
+    };
+
+  } 
+
   findByEmail(email: string) {
     return this.usersRepository.findByEmail(email);
   }
@@ -51,21 +132,58 @@ export class UsersService {
   // si lo hicieramos, cualquiera podria registrarse como admin mandando
   // el campo correcto en el body. Este es el UNICO camino habilitado
   // para cambiar un rol, y esta protegido por RolesGuard en el controller.
-  async updateRole(id: number, newRole: UserRole, requestedBy: { id: number }) {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException('Usuario no encontrado');
+  async updateRole(
+  id: number,
+  newRole: UserRole,
+  requestedBy: { id: number }
+) {
 
-    if (user.id === requestedBy.id && newRole !== UserRole.ADMIN) {
-      // Evita que un admin se auto-degrade por error y se quede afuera
-      // del panel sin querer (y sin que quede ya ningun otro admin activo)
-      throw new ConflictException('No puedes eliminar tu propio rol de administrador.');
+  const user = await this.usersRepository.findOneBy({ id });
+
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
+  }
+
+
+  if (
+    user.id === requestedBy.id &&
+    newRole !== UserRole.ADMIN
+  ) {
+    throw new ConflictException(
+      'No puedes quitarte tu propio rol de administrador.'
+    );
+  }
+
+
+  if (
+    user.role === UserRole.ADMIN &&
+    newRole === UserRole.CUSTOMER
+  ) {
+
+    const admins = await this.usersRepository.count({
+      where: {
+        role: UserRole.ADMIN
+      }
+    });
+
+
+    if (admins <= 1) {
+      throw new ConflictException(
+        'Debe existir al menos un administrador activo.'
+      );
     }
 
-    user.role = newRole;
-    const saved = await this.usersRepository.save(user);
-    const { passwordHash: _, ...result } = saved;
-    return result;
   }
+
+
+  user.role = newRole;
+
+  const saved = await this.usersRepository.save(user);
+
+  const { passwordHash, ...result } = saved;
+
+  return result;
+}
 
   async updateProfile(id: number, dto: UpdateProfileDto) {
 
