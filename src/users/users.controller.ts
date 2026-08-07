@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch , Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch , Put, Req, UseGuards, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -7,6 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { Delete } from '@nestjs/common';
 
 @Controller('users')
 export class UsersController {
@@ -27,8 +28,16 @@ export class UsersController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  findAll() {
-      return this.usersService.findAll();
+  findAll(
+      @Query('page') page = 1,
+      @Query('search') search = '',
+      @Query('role') role = 'all',
+  ) {
+      return this.usersService.findAll(
+          Number(page),
+          search,
+          role,
+      );
   }
 
   @Get(':id')
@@ -48,6 +57,15 @@ export class UsersController {
     @Req() req: any,
   ) {
     return this.usersService.updateRole(id, dto.role, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Delete(':id')
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.usersService.remove(id);
   }
 
   @UseGuards(JwtAuthGuard)

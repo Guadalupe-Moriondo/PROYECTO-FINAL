@@ -25,6 +25,11 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CUSTOMER })
   role!: UserRole;
 
+  @Column({
+    default: false,
+  })
+  owner!: boolean;
+
   @Column({ nullable: true })
   phone!: string;
 

@@ -212,4 +212,19 @@ export class OrdersService {
     yearly,
   };
 }
+
+async notifyCustomer(
+  id: number,
+  method: 'whatsapp' | 'email',
+) {
+
+  const order = await this.findOne(id);
+
+  order.customerNotified = true;
+  order.notificationMethod = method;
+  order.customerNotifiedAt = new Date();
+
+  return this.ordersRepository.save(order);
+
+}
 }

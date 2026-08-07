@@ -43,4 +43,20 @@ export class Order {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
-}
+
+  @Column({
+    default: false,
+  })
+  customerNotified!: boolean;
+
+  @Column({
+    nullable: true,
+  })
+  notificationMethod!: string;
+
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  customerNotifiedAt!: Date | null;
+  }

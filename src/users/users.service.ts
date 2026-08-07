@@ -42,86 +42,90 @@ export class UsersService {
     return result;
   }
 
-  async findAll(page = 1, search = '') {
+ async findAll(page = 1, search = '',role = 'all') {
 
-    const limit = 10;
+  const limit = 10;
 
-    const query = this.usersRepository
-      .createQueryBuilder('user');
+  const query =
+    this.usersRepository.createQueryBuilder('user');
 
+  if (search) {
 
-    if (search) {
-
-      query.where(
-        'user.name ILIKE :search OR user.email ILIKE :search',
-        {
-          search: `%${search}%`,
-        }
-      );
-
-    }
-
-
-    const [items, total] =
-      await query
-        .orderBy('user.createdAt', 'DESC')
-        .skip((page - 1) * limit)
-        .take(limit)
-        .getManyAndCount();
-
-
-
-    const totalUsers =
-      await this.usersRepository.count();
-
-
-
-    const totalAdmins =
-      await this.usersRepository.count({
-        where: {
-          role: UserRole.ADMIN,
-        },
-      });
-
-
-
-    const totalCustomers =
-      await this.usersRepository.count({
-        where: {
-          role: UserRole.CUSTOMER,
-        },
-      });
-
-
-
-    return {
-
-      items: items.map(user => {
-
-        const {
-          passwordHash,
-          ...safeUser
-        } = user;
-
-        return safeUser;
-
-      }),
-
-      total,
-
-      page,
-
-      limit,
-
-      statistics: {
-        totalUsers,
-        totalAdmins,
-        totalCustomers,
+    query.andWhere(
+      `
+      user.name LIKE :search
+      OR user.email LIKE :search
+      `,
+      {
+        search: `%${search}%`,
       },
+    );
 
-    };
+  }
+  if (role !== 'all') {
+    query.andWhere(
+      `
+      user.role = :role
+      `,
+      {
+        role,
+      },
+    );
 
-  } 
+  }
+
+  const [items, total] =
+    await query
+      .orderBy('user.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+  const totalUsers =
+    await this.usersRepository.count();
+
+  const totalAdmins =
+    await this.usersRepository.count({
+      where: {
+        role: UserRole.ADMIN,
+      },
+    });
+
+  const totalCustomers =
+    await this.usersRepository.count({
+      where: {
+        role: UserRole.CUSTOMER,
+      },
+    });
+
+  return {
+
+    items: items.map(user => {
+
+      const {
+        passwordHash,
+        ...safeUser
+      } = user;
+
+      return safeUser;
+
+    }),
+
+    total,
+
+    page,
+
+    limit,
+
+    statistics: {
+      totalUsers,
+      totalAdmins,
+      totalCustomers,
+    },
+
+  };
+
+}
 
   findByEmail(email: string) {
     return this.usersRepository.findByEmail(email);
@@ -143,6 +147,12 @@ export class UsersService {
   if (!user) {
     throw new NotFoundException('Usuario no encontrado');
   }
+
+  if (user.owner) {
+  throw new ConflictException(
+    'No se puede modificar el rol del administrador principal.',
+  );
+}
 
 
   if (
@@ -249,4 +259,27 @@ async changePassword(id: number, dto: ChangePasswordDto) {
     message: 'Contraseña actualizada correctamente',
   };
 }
+
+async remove(id: number) {
+
+  const user = await this.usersRepository.findOneBy({ id });
+
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
+  }
+
+  if (user.owner) {
+    throw new ConflictException(
+      'No se puede eliminar el administrador principal.',
+    );
+  }
+
+  await this.usersRepository.remove(user);
+
+  return {
+    message: 'Usuario eliminado correctamente',
+  };
 }
+}
+
+

@@ -61,6 +61,15 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, dto);
   }
 
-  
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Put(':id/notify')
+  notifyCustomer(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { method: 'whatsapp' | 'email' },
+  ) {
+    return this.ordersService.notifyCustomer(id, body.method);
+  }
 
+  
 }

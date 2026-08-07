@@ -42,10 +42,16 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       // cliente antes de que vos decidieras que sea el admin), lo ascendemos.
       // Si ya es admin, no hacemos nada: esto es lo que permite que el
       // hook corra en CADA arranque sin generar duplicados ni pisar datos.
-      if (existing.role !== UserRole.ADMIN) {
-        existing.role = UserRole.ADMIN;
-        await this.usersRepository.save(existing);
-        this.logger.log(`User ${email} promoted to admin.`);
+      if (
+          existing.role !== UserRole.ADMIN ||
+          !existing.owner
+      ) {
+          existing.role = UserRole.ADMIN;
+          existing.owner = true;
+
+          await this.usersRepository.save(existing);
+
+          this.logger.log(`User ${email} promoted to owner admin.`);
       }
       return;
     }
@@ -56,6 +62,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       email,
       passwordHash,
       role: UserRole.ADMIN,
+      owner: true,
     });
     await this.usersRepository.save(admin);
     this.logger.log(`Admin user automatically created: ${email}`);
