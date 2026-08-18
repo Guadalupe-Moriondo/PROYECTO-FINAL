@@ -28,7 +28,6 @@ export class ProductsRepository extends Repository<Product> {
         `(
           LOWER(product.name) LIKE :search
           OR LOWER(product.code) LIKE :search
-          OR LOWER(product.brand) LIKE :search
           OR LOWER(product.description) LIKE :search
           OR LOWER(category.name) LIKE :search
         )`,
@@ -38,11 +37,6 @@ export class ProductsRepository extends Repository<Product> {
       );
     }
 
-    
-
-    if (filters.brand) {
-      query.andWhere('product.brand LIKE :brand', { brand: `%${filters.brand}%` });
-    }
 
     if (filters.categoryId) {
       query.andWhere('category.id = :categoryId', { categoryId: filters.categoryId });

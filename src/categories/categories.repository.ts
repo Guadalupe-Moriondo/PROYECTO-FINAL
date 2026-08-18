@@ -24,6 +24,8 @@ export class CategoriesRepository extends Repository<Category> {
   async findWithProductCount() {
     // `productCount` ahora es un @VirtualColumn en la entidad Category,
     // asi que se calcula automaticamente al traer las categorias.
-    return this.createQueryBuilder('category').getMany();
+    return this.createQueryBuilder('category')
+     .orderBy('category.name', 'ASC')
+     .getMany();
   }
 }

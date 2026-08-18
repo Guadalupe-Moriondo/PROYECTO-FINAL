@@ -26,10 +26,6 @@ export class CreateProductDto {
   @IsOptional()
   machineryCompatibility?: string;
 
-  @IsString()
-  @IsOptional()
-  brand?: string;
-
   @IsNumber()
   @IsPositive()
   price!: number;

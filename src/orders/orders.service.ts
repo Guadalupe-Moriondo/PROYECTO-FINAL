@@ -159,15 +159,49 @@ export class OrdersService {
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto) {
-    const order = await this.findOne(id);
-    order.status = dto.status;
-    const updated = await this.ordersRepository.save(order);
+  const order = await this.findOne(id);
 
-    // Aviso "bonus" al cliente. Mismo criterio: no bloqueante, no rompe
-    // la respuesta HTTP si el email falla.
-    void this.mailService.notifyStatusChange(updated);
+  const nextStatus: Record<OrderStatus, OrderStatus | null> = {
+    [OrderStatus.PENDING]: OrderStatus.CONFIRMED,
+    [OrderStatus.CONFIRMED]: OrderStatus.IN_PREPARATION,
+    [OrderStatus.IN_PREPARATION]: OrderStatus.WITHDRAW,
+    [OrderStatus.WITHDRAW]: OrderStatus.DELIVERED,
+    [OrderStatus.DELIVERED]: null,
+  };
 
-    return updated;
+  const expectedNextStatus = nextStatus[order.status];
+
+  // No permitir cambiar un pedido ya entregado
+  if (order.status === OrderStatus.DELIVERED) {
+    throw new BadRequestException(
+      'El pedido ya fue entregado y no puede cambiar de estado.',
+    );
+  }
+
+  // No permitir saltear estados
+  if (dto.status !== expectedNextStatus) {
+    throw new BadRequestException(
+      `No se puede pasar de "${order.status}" a "${dto.status}".`,
+    );
+  }
+
+  // Para entregar, el cliente debe haber sido notificado
+  if (
+    dto.status === OrderStatus.DELIVERED &&
+    !order.customerNotified
+  ) {
+    throw new BadRequestException(
+      'No se puede marcar el pedido como entregado porque el cliente todavía no fue notificado.',
+    );
+  }
+
+  order.status = dto.status;
+
+  const updated = await this.ordersRepository.save(order);
+
+  void this.mailService.notifyStatusChange(updated);
+
+  return updated;
   }
 
   async getStatistics() {

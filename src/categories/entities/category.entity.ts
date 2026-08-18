@@ -15,9 +15,6 @@ export class Category {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
-  @Column({ length: 20, default: 'otros' })
-  machineType!: string;
-
   @Column({ default: true })
   active!: boolean;
 

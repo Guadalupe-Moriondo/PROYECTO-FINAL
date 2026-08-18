@@ -17,12 +17,15 @@ export class CategoriesService {
   }
 
   findAll() {
-  return this.categoriesRepository.find({
-    where: {
-      active: true,
-    },
+    return this.categoriesRepository.find({
+      where: {
+        active: true,
+      },
+      order: {
+        name: 'ASC',
+      },
     });
-  } 
+  }
 
   async findOne(id: number) {
     const category = await this.categoriesRepository.findOneBy({ id });
