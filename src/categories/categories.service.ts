@@ -2,7 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-
+import { PaginationQueryDto } from 'src/common/pagination';
+import { buildPaginatedResult } from '../common/pagination';
 // El service concentra la LOGICA DE NEGOCIO.
 // El controller nunca deberia hablar directamente con la base de datos:
 // siempre pasa por el service, y el service usa el repository.
@@ -16,15 +17,14 @@ export class CategoriesService {
     return this.categoriesRepository.save(category);
   }
 
-  findAll() {
-    return this.categoriesRepository.find({
-      where: {
-        active: true,
-      },
-      order: {
-        name: 'ASC',
-      },
-    });
+  async findAll(pagination: PaginationQueryDto) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
+    const [data, total] =
+      await this.categoriesRepository.findAllPaginated(page, limit);
+
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: number) {

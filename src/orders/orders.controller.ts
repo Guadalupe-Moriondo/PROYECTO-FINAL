@@ -7,6 +7,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
 import{OrderHistoryQueryDto} from './dto/history-query.dto';
+import { MyOrdersQueryDto } from './dto/my-orders-query.dto';
+
+
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
@@ -21,8 +24,10 @@ export class OrdersController {
 
   // El cliente ve solo SUS pedidos. GET /pedidos/mios?pagina=1&limite=10
   @Get('mine')
-  myOrders(@Req() req: any, @Query() pagination: PaginationQueryDto) {
-    return this.ordersService.findByUser(req.user.id, pagination);
+  myOrders(@Req() req: any, @Query() query: MyOrdersQueryDto) {
+    const delivered =
+      query.status === 'delivered' ? true : query.status === 'pending' ? false : undefined;
+    return this.ordersService.findByUser(req.user.id, query, delivered);
   }
 
   // El admin ve TODOS los pedidos (requerimiento funcional 10)
@@ -32,7 +37,8 @@ export class OrdersController {
   findAll(@Query() pagination: PaginationQueryDto) {
     return this.ordersService.findAll(pagination);
   }
-
+  
+  @UseGuards(RolesGuard)
   @Get('/statistics')
   @Roles('admin')
   getStatistics() {

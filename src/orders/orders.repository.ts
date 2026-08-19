@@ -8,16 +8,31 @@ export class OrdersRepository extends Repository<Order> {
     super(Order, dataSource.createEntityManager());
   }
 
-  findByUserId(userId: number, page: number, limit: number): Promise<[Order[], number]> {
+  // delivered=true -> solo entregados. delivered=false -> todo menos entregados.
+  // delivered=undefined -> sin filtrar (comportamiento actual).
+  findByUserId(
+    userId: number,
+    page: number,
+    limit: number,
+    delivered?: boolean,
+  ): Promise<[Order[], number]> {
+    const where: any = { user: { id: userId } };
+
+    if (delivered === true) {
+      where.status = OrderStatus.DELIVERED;
+    } else if (delivered === false) {
+      where.status = Not(OrderStatus.DELIVERED);
+    }
+
     return this.findAndCount({
-      where: { user: { id: userId } },
+      where,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
   }
 
-   // Pedidos "activos": todo lo que todavia no fue entregado. Una vez que
+  // Pedidos "activos": todo lo que todavia no fue entregado. Una vez que
   // un pedido pasa a DELIVERED, deja de aparecer aca y pasa a vivir
   // unicamente en el historial (findDeliveredPaginated).
   findAllPaginated(page: number, limit: number): Promise<[Order[], number]> {

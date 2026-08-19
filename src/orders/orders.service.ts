@@ -123,10 +123,10 @@ export class OrdersService {
     return savedOrder;
   }
 
-  async findByUser(userId: number, pagination: PaginationQueryDto) {
+  async findByUser(userId: number, pagination: PaginationQueryDto, delivered?: boolean) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
-    const [data, total] = await this.ordersRepository.findByUserId(userId, page, limit);
+    const [data, total] = await this.ordersRepository.findByUserId(userId, page, limit, delivered);
     return buildPaginatedResult(data, total, page, limit);
   }
 

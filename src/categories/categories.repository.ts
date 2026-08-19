@@ -28,4 +28,12 @@ export class CategoriesRepository extends Repository<Category> {
      .orderBy('category.name', 'ASC')
      .getMany();
   }
+
+  findAllPaginated(page: number, limit: number) {
+    return this.findAndCount({
+      order: { name: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
 }
