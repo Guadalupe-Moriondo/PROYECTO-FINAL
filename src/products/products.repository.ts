@@ -90,10 +90,23 @@ export class ProductsRepository extends Repository<Product> {
       .getMany();
   }
 
+  // Version paginada, usada por GET /stock/alerts (la vista de Gestion de Stock)
+  async findWithLowStockPaginated(page: number, limit: number): Promise<[Product[], number]> {
+    return this.createQueryBuilder('product')
+      .where('product.stock <= product.min_stock')
+      .andWhere('product.active = true')
+      .orderBy('product.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+  }
+
   // Util para descontar/sumar stock de forma atomica (lo usa el modulo de Stock)
   async adjustStock(productId: number, quantity: number): Promise<void> {
     // increment() genera un UPDATE ... SET stock = stock + cantidad
     // Es mas seguro que leer, sumar en JS y volver a guardar (evita condiciones de carrera)
     await this.increment({ id: productId }, 'stock', quantity);
   }
+
+  
 }

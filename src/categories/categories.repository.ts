@@ -19,18 +19,9 @@ export class CategoriesRepository extends Repository<Category> {
     super(Category, dataSource.createEntityManager());
   }
 
-  // Ejemplo de metodo custom: traer categorias junto con la cantidad
-  // de productos que tiene cada una (util para el panel de admin)
-  async findWithProductCount() {
-    // `productCount` ahora es un @VirtualColumn en la entidad Category,
-    // asi que se calcula automaticamente al traer las categorias.
-    return this.createQueryBuilder('category')
-     .orderBy('category.name', 'ASC')
-     .getMany();
-  }
-
   findAllPaginated(page: number, limit: number) {
     return this.findAndCount({
+      where: { active: true },
       order: { name: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

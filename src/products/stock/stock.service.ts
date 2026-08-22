@@ -4,6 +4,9 @@ import { ProductsRepository } from '../products.repository';
 import { CreateMovementDto } from '../dto/create-movement.dto';
 import { MovementType } from '../entities/stock-movement.entity';
 import { BadRequestException} from '@nestjs/common';
+import { buildPaginatedResult, PaginationQueryDto } from '../../common/pagination';
+
+
 @Injectable()
 export class StockService {
   constructor(
@@ -37,7 +40,10 @@ export class StockService {
     return this.stockRepository.findByProduct(productId);
   }
 
-  lowStockAlerts() {
-    return this.productsRepository.findWithLowStock();
+  async lowStockAlerts(pagination: PaginationQueryDto) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const [data, total] = await this.productsRepository.findWithLowStockPaginated(page, limit);
+    return buildPaginatedResult(data, total, page, limit);
   }
 }
