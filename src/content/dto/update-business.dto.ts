@@ -7,8 +7,8 @@ export class UpdateBusinessDto {
   @IsString() @IsOptional() province?: string;
   @IsString() @IsOptional() country?: string;
   @IsString() @IsOptional() phone?: string;
-  @IsString() @IsOptional() mondayOpen?: string;
-  @IsString() @IsOptional() mondayClose?: string;
+  @IsString() @IsOptional() morningOpen?: string;
+  @IsString() @IsOptional() morningClose?: string;
   @IsString() @IsOptional() afternoonOpen?: string;
   @IsString() @IsOptional() afternoonClose?: string;
   @IsString() @IsOptional() saturdayOpen?: string;

@@ -30,10 +30,10 @@ export class Business {
   whatsapp!: string; // usado por el boton de consulta directa (objetivo especifico)
 
   @Column({ nullable: true })
-  mondayOpen!: string;
+  morningOpen!: string;
 
   @Column({ nullable: true })
-  mondayClose!: string;
+  morningClose!: string;
 
   @Column({ nullable: true })
   afternoonOpen!: string;
