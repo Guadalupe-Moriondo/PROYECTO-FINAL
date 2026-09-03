@@ -72,7 +72,7 @@ export class OrdersController {
   @Put(':id/notify')
   notifyCustomer(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { method: 'whatsapp' | 'email' },
+    @Body() body: { method: 'whatsapp' },
   ) {
     return this.ordersService.notifyCustomer(id, body.method);
   }

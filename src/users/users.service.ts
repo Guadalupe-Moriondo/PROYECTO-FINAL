@@ -139,8 +139,17 @@ export class UsersService {
   async updateRole(
   id: number,
   newRole: UserRole,
-  requestedBy: { id: number }
+  requestedBy: { id: number; owner: boolean }
 ) {
+
+    // Solo el administrador principal puede
+    // cambiar roles.
+
+  if (!requestedBy.owner) {
+    throw new ConflictException(
+      'Solo el administrador principal puede cambiar roles.',
+    );
+  }
 
   const user = await this.usersRepository.findOneBy({ id });
 
@@ -185,9 +194,22 @@ export class UsersService {
 
   }
 
+   // Guardamos el rol anterior.
+  const wasAdmin = user.role === UserRole.ADMIN;
 
+  // Actualizamos el rol.
   user.role = newRole;
 
+  // Si pasa de admin a cliente,
+  // invalidamos su sesión actual.
+
+  if (
+    wasAdmin &&
+    newRole === UserRole.CUSTOMER
+  ) {
+    user.tokenVersion += 1;
+  }
+  
   const saved = await this.usersRepository.save(user);
 
   const { passwordHash, ...result } = saved;

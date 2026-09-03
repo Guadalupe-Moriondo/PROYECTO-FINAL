@@ -30,6 +30,9 @@ export class User {
   })
   owner!: boolean;
 
+  @Column({ default: 0 })
+  tokenVersion!: number;
+
   @Column({ nullable: true })
   phone!: string;
 

@@ -118,7 +118,11 @@ export class OrdersService {
     // enviar un correo no es algo que se pueda "revertir" como un UPDATE,
     // y no tiene sentido mantener bloqueado el producto en la BD mientras
     // esperamos que responda un servidor SMTP externo.
-    void this.mailService.notifyNewOrder(savedOrder);
+    const fullOrder = await this.ordersRepository.findOneBy({ id: savedOrder.id });
+
+    if (fullOrder) {
+      void this.mailService.notifyNewOrder(fullOrder);
+    }
 
     return savedOrder;
   }
@@ -199,7 +203,7 @@ export class OrdersService {
 
   const updated = await this.ordersRepository.save(order);
 
-  void this.mailService.notifyStatusChange(updated);
+    void this.mailService.notifyStatusChange(updated);
 
   return updated;
   }
@@ -249,7 +253,7 @@ export class OrdersService {
 
 async notifyCustomer(
   id: number,
-  method: 'whatsapp' | 'email',
+  method: 'whatsapp'
 ) {
 
   const order = await this.findOne(id);

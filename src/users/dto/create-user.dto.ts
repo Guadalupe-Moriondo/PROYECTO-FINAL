@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength,Matches } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -13,6 +13,7 @@ export class CreateUserDto {
   password!: string;
 
   @IsString()
-  @IsOptional()
-  phone?: string;
+  @IsNotEmpty({ message: 'El teléfono es obligatorio.' })
+  @Matches(/^[0-9]{8,15}$/, {message: 'El teléfono debe tener entre 8 y 15 dígitos, sin espacios ni guiones.',})
+  phone!: string;
 }

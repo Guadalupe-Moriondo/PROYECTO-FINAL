@@ -48,13 +48,22 @@ export class MailService {
 
   // Metodo especifico de dominio: arma el contenido del email de aviso
   // de pedido nuevo (requerimiento funcional 9) y lo manda al admin.
-  async notifyNewOrder(order: Order) {
+   async notifyNewOrder(order: Order) {
     const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
     if (!adminEmail) {
       this.logger.warn('ADMIN_EMAIL not configured, notification not sent');
       return;
     }
 
+    const paymentMethodLabels: Record<string, string> = {
+      cash: 'Efectivo',
+      transfer: 'Transferencia',
+      card: 'Tarjeta',
+    };
+
+    const paymentMethodLabel =
+      paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod;
+    
     const detailRows = order.details
       .map(
         (d) => `
@@ -65,40 +74,50 @@ export class MailService {
         </tr>`,
       )
       .join('');
-
+ 
     const html = `
-      <h2>New order received</h2>
-      <p><strong>Order number:</strong> ${order.orderNumber}</p>
-      <p><strong>Customer:</strong> ${order.user.name} (${order.user.email})</p>
-      <p><strong>Payment method:</strong> ${order.paymentMethod}</p>
+      <h2>Nuevo pedido recibido</h2>
+      <p><strong>Número de pedido:</strong> ${order.orderNumber}</p>
+      <p><strong>Cliente:</strong> ${order.user.name} (${order.user.email})</p>
+      <p><strong>Método de pago:</strong> ${paymentMethodLabel}</p>
       <table style="border-collapse:collapse;width:100%;">
         <thead>
           <tr>
-            <th style="padding:6px;border:1px solid #ddd;">Product</th>
-            <th style="padding:6px;border:1px solid #ddd;">Quantity</th>
-            <th style="padding:6px;border:1px solid #ddd;">Unit price</th>
+            <th style="padding:6px;border:1px solid #ddd;">Producto</th>
+            <th style="padding:6px;border:1px solid #ddd;">Cantidad</th>
+            <th style="padding:6px;border:1px solid #ddd;">Precio unitario</th>
           </tr>
         </thead>
         <tbody>${detailRows}</tbody>
       </table>
       <p><strong>Total: $${order.total}</strong></p>
-      <p>Log in to the admin panel to manage this order.</p>
+      <p>Ingresá al panel de administración para gestionar este pedido.</p>
     `;
-
-    await this.send(adminEmail, `New order ${order.orderNumber}`, html);
+ 
+    await this.send(adminEmail, `Nuevo pedido ${order.orderNumber}`, html);
   }
 
   // Bonus: notificacion al CLIENTE cuando cambia el estado de su pedido
   // (no estaba en tus requerimientos explicitos, pero mejora mucho la
   // experiencia y reutiliza toda la infraestructura que ya armamos)
-  async notifyStatusChange(order: Order) {
+    async notifyStatusChange(order: Order) {
+    const statusLabels: Record<string, string> = {
+      pending: 'Pendiente',
+      confirmed: 'Confirmado',
+      in_preparation: 'En preparación',
+      withdraw: 'Listo para retirar',
+      delivered: 'Entregado',
+    };
+
+    const statusLabel = statusLabels[order.status] ?? order.status;
+
     const html = `
-      <h2>Update on your order</h2>
-      <p>Your order <strong>${order.orderNumber}</strong> is now:
-        <strong>${order.status}</strong>
+      <h2>Actualización de tu pedido</h2>
+      <p>Tu pedido <strong>${order.orderNumber}</strong> ahora está:
+        <strong>${statusLabel}</strong>
       </p>
     `;
-    await this.send(order.user.email, `Order update ${order.orderNumber}`, html);
+    await this.send(order.user.email, `Actualización de pedido ${order.orderNumber}`, html);
   }
 
   

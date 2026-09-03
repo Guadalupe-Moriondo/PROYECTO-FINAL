@@ -29,11 +29,11 @@ export class AuthService {
     // El "payload" es la informacion que va DENTRO del token (no sensible,
     // porque un JWT se puede decodificar facilmente, solo no se puede FALSIFICAR
     // sin conocer el JWT_SECRET)
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role, tokenVersion: user.tokenVersion};
 
     return {
       access_token: this.jwtService.sign(payload),
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, owner: user.owner },
     };
   }
 }
