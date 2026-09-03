@@ -213,8 +213,6 @@ export class OrdersService {
     where: { status: OrderStatus.DELIVERED },
   });
 
-  const now = new Date();
-
   const monthly = {};
   const yearly = {};
 

@@ -25,7 +25,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
-import { Patch } from '@nestjs/common';
+
 
 
 // Tipos de archivo permitidos para las imagenes de productos
@@ -51,15 +51,6 @@ export class ProductsController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.findOne(id);
-  }
-
-  // A partir de aca, rutas protegidas: solo el ADMIN puede modificar el catalogo.
-  // JwtAuthGuard verifica que el token sea valido, RolesGuard verifica el rol.
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  @Get('admin/low-stock')
-  lowStock() {
-    return this.productsService.findWithLowStock();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

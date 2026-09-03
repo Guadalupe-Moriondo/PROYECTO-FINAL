@@ -82,14 +82,6 @@ export class ProductsRepository extends Repository<Product> {
     });
   }
 
-  // Metodo custom para el requerimiento de "notificaciones de stock minimo"
-  async findWithLowStock(): Promise<Product[]> {
-    return this.createQueryBuilder('product')
-      .where('product.stock <= product.min_stock')
-      .andWhere('product.active = true')
-      .getMany();
-  }
-
   // Version paginada, usada por GET /stock/alerts (la vista de Gestion de Stock)
   async findWithLowStockPaginated(page: number, limit: number): Promise<[Product[], number]> {
     return this.createQueryBuilder('product')

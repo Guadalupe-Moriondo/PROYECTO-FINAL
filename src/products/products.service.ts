@@ -74,10 +74,6 @@ export class ProductsService {
     return this.productsRepository.save(product);
   }
 
-  findWithLowStock() {
-    return this.productsRepository.findWithLowStock();
-  }
-
   // Asocia la imagen recien subida (por Multer) al producto, y borra
   // del disco la imagen anterior si existia, para no acumular archivos
   // huerfanos cada vez que el admin cambia la foto de un producto.
