@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
-import{OrderHistoryQueryDto} from './dto/history-query.dto';
+import {OrderHistoryQueryDto} from './dto/history-query.dto';
 import { MyOrdersQueryDto } from './dto/my-orders-query.dto';
 
 
