@@ -5,14 +5,14 @@ export class CreateMovementDto {
   @IsInt()
   productId!: number;
 
-  @IsEnum(MovementType)
+  @IsEnum(MovementType,{message: 'El tipo de movimiento debe ser "Entrada" o "Salida"'} )
   type!: MovementType;
 
-  @IsInt()
-  @IsPositive()
+  @IsInt({message: 'La cantidad debe ser un número entero'})
+  @IsPositive({message: 'La cantidad debe ser mayor a 0'})
   quantity!: number;
 
-  @IsString()
+  @IsString({message: 'El motivo debe ser un texto'})
   @IsOptional()
   reason?: string;
 }
