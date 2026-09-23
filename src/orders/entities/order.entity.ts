@@ -45,6 +45,13 @@ export class Order {
   createdAt!: Date;
 
   @Column({
+    name: 'delivered_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  deliveredAt!: Date | null;
+
+  @Column({
     default: false,
   })
   customerNotified!: boolean;

@@ -16,20 +16,47 @@ export class OrdersRepository extends Repository<Order> {
     limit: number,
     delivered?: boolean,
   ): Promise<[Order[], number]> {
-    const where: any = { user: { id: userId } };
+    const query = this.createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('order.details', 'details')
+      .leftJoinAndSelect('details.product', 'product')
+      .where('user.id = :userId', { userId });
 
     if (delivered === true) {
-      where.status = OrderStatus.DELIVERED;
+      query.andWhere('order.status = :delivered', {
+        delivered: OrderStatus.DELIVERED,
+      });
     } else if (delivered === false) {
-      where.status = Not(OrderStatus.DELIVERED);
+      query.andWhere('order.status != :delivered', {
+        delivered: OrderStatus.DELIVERED,
+      });
     }
 
-    return this.findAndCount({
-      where,
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    query
+      .addSelect(
+        `
+        CASE
+          WHEN order.status = :withdraw THEN 1
+          WHEN order.status = :inPreparation THEN 2
+          WHEN order.status = :confirmed THEN 3
+          WHEN order.status = :pending THEN 4
+          ELSE 5
+        END
+        `,
+        'status_priority',
+      )
+      .setParameters({
+        withdraw: OrderStatus.WITHDRAW,
+        inPreparation: OrderStatus.IN_PREPARATION,
+        confirmed: OrderStatus.CONFIRMED,
+        pending: OrderStatus.PENDING,
+      })
+      .orderBy('status_priority', 'ASC')
+      .addOrderBy('order.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    return query.getManyAndCount();
   }
 
   // Pedidos "activos": todo lo que todavia no fue entregado. Una vez que

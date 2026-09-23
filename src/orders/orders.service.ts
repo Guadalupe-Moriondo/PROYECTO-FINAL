@@ -201,6 +201,10 @@ export class OrdersService {
 
   order.status = dto.status;
 
+  if (dto.status === OrderStatus.DELIVERED) {
+    order.deliveredAt = new Date();
+  }
+
   const updated = await this.ordersRepository.save(order);
 
     void this.mailService.notifyStatusChange(updated);
