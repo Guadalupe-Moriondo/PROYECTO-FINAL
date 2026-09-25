@@ -40,6 +40,16 @@ export class StockService {
     return this.stockRepository.findByProduct(productId);
   }
 
+  async history(pagination: PaginationQueryDto) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
+    const [data, total] =
+      await this.stockRepository.findAllPaginated(page, limit);
+
+    return buildPaginatedResult(data, total, page, limit);
+  }
+
   async lowStockAlerts(pagination: PaginationQueryDto) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;

@@ -18,8 +18,15 @@ export class StockController {
     return this.stockService.registerMovement(dto);
   }
 
+ @Get('movements')
+  history(@Query() pagination: PaginationQueryDto) {
+    return this.stockService.history(pagination);
+  }
+
   @Get('movements/:productId')
-  history(@Param('productId', ParseIntPipe) productId: number) {
+  historyByProduct(
+    @Param('productId', ParseIntPipe) productId: number,
+  ) {
     return this.stockService.historyByProduct(productId);
   }
 

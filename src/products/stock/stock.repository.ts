@@ -14,4 +14,14 @@ export class StockRepository extends Repository<StockMovement> {
       order: { createdAt: 'DESC' },
     });
   }
+
+  findAllPaginated(page: number, limit: number) {
+  return this.findAndCount({
+    order: {
+      createdAt: 'DESC',
+    },
+    skip: (page - 1) * limit,
+    take: limit,
+  });
+}
 }
