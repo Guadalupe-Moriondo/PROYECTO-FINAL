@@ -8,7 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
 import {OrderHistoryQueryDto} from './dto/history-query.dto';
 import { MyOrdersQueryDto } from './dto/my-orders-query.dto';
-
+import { OrderFilterDto } from './dto/order-filter.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
@@ -36,6 +36,11 @@ export class OrdersController {
   @Get()
   findAll(@Query() pagination: PaginationQueryDto) {
     return this.ordersService.findAll(pagination);
+  }
+
+  @Get('search')
+  search(@Query() filters: OrderFilterDto) {
+    return this.ordersService.search(filters);
   }
   
   @UseGuards(RolesGuard)

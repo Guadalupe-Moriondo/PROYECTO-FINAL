@@ -12,7 +12,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { buildPaginatedResult, PaginationQueryDto } from '../common/pagination';
 import { OrderStatus } from './entities/order.entity';
-
+import { OrderFilterDto } from './dto/order-filter.dto';
 
 @Injectable()
 export class OrdersService {
@@ -160,6 +160,21 @@ export class OrdersService {
     const order = await this.ordersRepository.findOneBy({ id });
     if (!order) throw new NotFoundException('Order not found');
     return order;
+  }
+
+  async search(filters: OrderFilterDto) {
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 10;
+
+    const [data, total] =
+      await this.ordersRepository.searchWithFilters(filters);
+
+    return buildPaginatedResult(
+      data,
+      total,
+      page,
+      limit,
+    );
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto) {
