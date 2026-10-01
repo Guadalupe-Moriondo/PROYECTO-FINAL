@@ -8,7 +8,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from 'src/common/pagination';
 
-@Controller('categories') // prefijo de ruta: /categorias
+@Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
@@ -25,8 +25,6 @@ export class CategoriesController {
   }
 
   @Get(':id')
-  // ParseIntPipe convierte el parametro de ruta (siempre string) a number
-  // y devuelve error 400 automaticamente si no es un numero valido
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.categoriesService.findOne(id);
   }

@@ -3,7 +3,6 @@ import { CartService } from './cart.service';
 import { AddItemDto } from './dto/add-item.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-// Todo el carrito requiere estar logueado, porque esta atado al usuario
 @UseGuards(JwtAuthGuard)
 @Controller('cart')
 export class CartController {
@@ -11,7 +10,6 @@ export class CartController {
 
   @Get()
   view(@Req() req: any) {
-    // req.user viene de JwtStrategy.validate() -> { id, email, rol }
     return this.cartService.viewCart(req.user.id);
   }
 

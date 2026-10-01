@@ -16,7 +16,6 @@ export class ProductsService {
   ) {}
 
   async create(dto: CreateProductDto) {
-    // Verificamos que la categoria exista antes de crear el producto
     const category = await this.categoriesRepository.findOneBy({ id: dto.categoryId });
     if (!category) {
       throw new NotFoundException(`Category with id ${dto.categoryId} not found`);
@@ -67,16 +66,11 @@ export class ProductsService {
 
 
   async remove(id: number) {
-    // Baja logica en vez de borrado fisico: asi no se rompen pedidos historicos
-    // que ya referencian este producto
     const product = await this.findOne(id);
     product.active = false;
     return this.productsRepository.save(product);
   }
 
-  // Asocia la imagen recien subida (por Multer) al producto, y borra
-  // del disco la imagen anterior si existia, para no acumular archivos
-  // huerfanos cada vez que el admin cambia la foto de un producto.
   async updateImage(id: number, file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('No image file was received');
@@ -85,18 +79,12 @@ export class ProductsService {
     const product = await this.findOne(id);
 
     if (product.imageUrl) {
-      // El nombre del archivo es la ultima parte de la URL guardada
       const oldFileName = product.imageUrl.split('/').pop();
       if (oldFileName) {
         const oldPath = join(process.cwd(), 'uploads', 'products', oldFileName);
-        // No usamos try/catch con throw: si el archivo viejo ya no existe
-        // por algun motivo, no queremos que eso rompa la subida de la nueva imagen
         await unlink(oldPath).catch(() => null);
       }
     }
-
-    // Guardamos la URL relativa con la que despues se sirve el archivo
-    // (ver la configuracion de app.useStaticAssets en main.ts)
     product.imageUrl = `/uploads/products/${file.filename}`;
     return this.productsRepository.save(product);
   }

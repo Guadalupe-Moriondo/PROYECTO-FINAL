@@ -39,7 +39,6 @@ export class CreateProductDto {
   @IsOptional()
   active?: boolean;
 
-  // Solo mandamos el id de la categoria, no el objeto completo
   @IsInt()
   categoryId!: number;
 }

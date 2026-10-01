@@ -6,7 +6,6 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../../common/pagination';
 
-// Todo el modulo de stock es exclusivo del administrador
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 @Controller('stock')

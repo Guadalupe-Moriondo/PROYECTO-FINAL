@@ -14,9 +14,6 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
 
-    // Importante: el mensaje de error es el MISMO tanto si el email no existe
-    // como si la contraseña es incorrecta. Esto evita que un atacante
-    // pueda deducir que emails estan registrados (enumeration attack).
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -26,9 +23,6 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // El "payload" es la informacion que va DENTRO del token (no sensible,
-    // porque un JWT se puede decodificar facilmente, solo no se puede FALSIFICAR
-    // sin conocer el JWT_SECRET)
     const payload = { sub: user.id, email: user.email, role: user.role, tokenVersion: user.tokenVersion};
 
     return {

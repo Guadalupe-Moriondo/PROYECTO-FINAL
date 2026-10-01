@@ -5,12 +5,10 @@ import { OrderFilterDto } from './dto/order-filter.dto';
 
 @Injectable()
 export class OrdersRepository extends Repository<Order> {
-  constructor(private dataSource: DataSource) {
+  constructor(dataSource: DataSource) {
     super(Order, dataSource.createEntityManager());
   }
 
-  // delivered=true -> solo entregados. delivered=false -> todo menos entregados.
-  // delivered=undefined -> sin filtrar (comportamiento actual).
   findByUserId(
     userId: number,
     page: number,
@@ -60,9 +58,6 @@ export class OrdersRepository extends Repository<Order> {
     return query.getManyAndCount();
   }
 
-  // Pedidos "activos": todo lo que todavia no fue entregado. Una vez que
-  // un pedido pasa a DELIVERED, deja de aparecer aca y pasa a vivir
-  // unicamente en el historial (findDeliveredPaginated).
   findAllPaginated(page: number, limit: number): Promise<[Order[], number]> {
     return this.findAndCount({
       where: { status: Not(OrderStatus.DELIVERED) },
@@ -72,10 +67,6 @@ export class OrdersRepository extends Repository<Order> {
     });
   }
 
-   // Historial de pedidos entregados, paginado. Si se pasa "month"
-  // ("YYYY-MM"), filtra por ese mes puntual. Si se pasa "year" ("YYYY")
-  // y no hay mes, filtra por ese año completo. Si vienen los dos, "month"
-  // manda (es mas especifico).
   findDeliveredPaginated(
     page: number,
     limit: number,

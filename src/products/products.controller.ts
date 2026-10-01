@@ -12,23 +12,17 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/pagination';
 
-
-
-// Tipos de archivo permitidos para las imagenes de productos
 const ALLOWED_IMAGE_TYPES = /\.(jpg|jpeg|png|webp)$/i;
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // Rutas publicas: cualquier visitante del sitio puede ver el catalogo
-  // GET /productos?pagina=1&limite=20
   @Get()
   findAll(@Query() pagination: PaginationQueryDto) {
     return this.productsService.findAll(pagination);
   }
 
-  // GET /productos/buscar?nombre=filtro&categoriaId=1&precioMin=100&pagina=1&limite=20
   @Get('search')
   search(@Query() filters: ProductFilterDto) {
     return this.productsService.search(filters);
@@ -53,28 +47,19 @@ export class ProductsController {
     return this.productsService.update(id, dto);
   }
 
-  
-
-  // Endpoint dedicado para subir/reemplazar la foto de un producto.
-  // Separado del PUT general porque este recibe multipart/form-data
-  // (un archivo), no JSON como el resto de los endpoints.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post(':id/image')
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        // Carpeta donde se guardan fisicamente los archivos en el servidor
         destination: './uploads/products',
-        filename: (req, file, callback) => {
-          // Nunca usamos el nombre original del archivo (podria repetirse
-          // entre dos uploads distintos, o contener caracteres raros).
-          // Generamos un nombre unico con UUID + la extension original.
+        filename: (_req, file, callback) => {
           const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
           callback(null, uniqueName);
         },
       }),
-      fileFilter: (req, file, callback) => {
+      fileFilter: (_req, file, callback) => {
         if (!ALLOWED_IMAGE_TYPES.test(extname(file.originalname))) {
           return callback(
             new BadRequestException('Only .jpg, .jpeg, .png or .webp images are allowed'),
@@ -84,7 +69,7 @@ export class ProductsController {
         callback(null, true);
       },
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5 MB maximo por imagen
+        fileSize: 5 * 1024 * 1024, 
       },
     }),
   )

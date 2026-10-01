@@ -11,7 +11,6 @@ export class CartService {
     private readonly productsRepository: ProductsRepository,
   ) {}
 
-  // Trae el carrito del usuario, o le crea uno vacio si es la primera vez
   private async getOrCreate(userId: number): Promise<Cart> {
     let cart = await this.cartRepository.findByUserId(userId);
     if (!cart) {
@@ -49,8 +48,6 @@ export class CartService {
     cart.items.push({ product, quantity: dto.quantity } as any);
     }
 
-    // Gracias a cascade:true en la relacion OneToMany, save() en el carrito
-    // tambien guarda/actualiza los items automaticamente
     const saved = await this.cartRepository.save(cart);
     return this.calculateTotals(saved);
   }
@@ -75,7 +72,6 @@ export class CartService {
     return this.calculateTotals(saved);
   }
 
-  // Calcula subtotal por item y total general (requerimiento funcional 7)
   private calculateTotals(cart: Cart) {
     const items = cart.items.map((item) => ({
       ...item,

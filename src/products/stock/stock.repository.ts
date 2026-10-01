@@ -4,7 +4,7 @@ import { StockMovement } from '../entities/stock-movement.entity';
 
 @Injectable()
 export class StockRepository extends Repository<StockMovement> {
-  constructor(private dataSource: DataSource) {
+  constructor(dataSource: DataSource) {
     super(StockMovement, dataSource.createEntityManager());
   }
 

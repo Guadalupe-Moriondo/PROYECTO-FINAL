@@ -9,13 +9,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
-  // Publico: el frontend lo consume para mostrar telefono, horarios, etc.
   @Get()
   get() {
     return this.businessService.get();
   }
 
-  // Solo el admin puede editar estos datos
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Put()

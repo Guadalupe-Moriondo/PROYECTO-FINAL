@@ -8,8 +8,6 @@ export class BusinessService {
 
   async get() {
     const business = await this.businessRepository.getOnly();
-    // Si todavia nadie cargo los datos, devolvemos un objeto vacio
-    // en vez de un error, para que el frontend no se rompa
     return business || {};
   }
 

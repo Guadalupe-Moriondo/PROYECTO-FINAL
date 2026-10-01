@@ -13,7 +13,6 @@ import { Delete } from '@nestjs/common';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // Registro publico de clientes (requerimiento funcional 12)
   @Post()
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
@@ -45,9 +44,6 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  // Solo un admin puede ascender/degradar el rol de otro usuario.
-  // Este es el UNICO camino habilitado para volverse admin, aparte
-  // del admin inicial que crea el hook de arranque.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Put(':id/role')

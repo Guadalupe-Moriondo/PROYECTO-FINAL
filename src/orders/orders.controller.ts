@@ -22,7 +22,6 @@ export class OrdersController {
     return this.ordersService.createFromCart(req.user.id, dto);
   }
 
-  // El cliente ve solo SUS pedidos. GET /pedidos/mios?pagina=1&limite=10
   @Get('mine')
   myOrders(@Req() req: any, @Query() query: MyOrdersQueryDto) {
     const delivered =
@@ -30,7 +29,6 @@ export class OrdersController {
     return this.ordersService.findByUser(req.user.id, query, delivered);
   }
 
-  // El admin ve TODOS los pedidos (requerimiento funcional 10)
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Get()
@@ -50,9 +48,6 @@ export class OrdersController {
     return this.ordersService.getStatistics();
   }
 
-  // Historial de pedidos entregados (requerimiento: los pedidos entregados
-  // desaparecen de "Pedidos" y quedan guardados aca). "month" es opcional,
-  // formato "YYYY-MM" (lo manda el <input type="month"> del frontend).
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('/history')
@@ -80,7 +75,5 @@ export class OrdersController {
     @Body() body: { method: 'whatsapp' },
   ) {
     return this.ordersService.notifyCustomer(id, body.method);
-  }
-
-  
+  } 
 }

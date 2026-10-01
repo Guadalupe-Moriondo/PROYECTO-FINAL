@@ -2,8 +2,6 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 't
 import { Order } from './order.entity';
 import { Product } from '../../products/entities/product.entity';
 
-// Guarda una "foto" del precio al momento de la compra: si despues el
-// producto cambia de precio, el historial del pedido no se altera.
 @Entity('order_details')
 export class OrderDetail {
   @PrimaryGeneratedColumn()

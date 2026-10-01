@@ -4,15 +4,12 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PaginationQueryDto } from 'src/common/pagination';
 import { buildPaginatedResult } from '../common/pagination';
-// El service concentra la LOGICA DE NEGOCIO.
-// El controller nunca deberia hablar directamente con la base de datos:
-// siempre pasa por el service, y el service usa el repository.
+
 @Injectable()
 export class CategoriesService {
   constructor(private readonly categoriesRepository: CategoriesRepository) {}
 
   create(dto: CreateCategoryDto) {
-    // create() arma la instancia en memoria, save() la persiste en la BD
     const category = this.categoriesRepository.create(dto);
     return this.categoriesRepository.save(category);
   }
@@ -36,7 +33,7 @@ export class CategoriesService {
   }
 
   async update(id: number, dto: UpdateCategoryDto) {
-    const category = await this.findOne(id); // reutilizamos la validacion de existencia
+    const category = await this.findOne(id); 
     Object.assign(category, dto);
     return this.categoriesRepository.save(category);
   }

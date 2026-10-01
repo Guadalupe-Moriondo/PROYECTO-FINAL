@@ -1,12 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { OrdersRepository } from './orders.repository';
-import { ProductsRepository } from '../products/products.repository';
 import { Product } from '../products/entities/product.entity';
 import { Order } from './entities/order.entity';
 import { Cart } from '../cart/entities/cart.entity';
 import { CartService } from '../cart/cart.service';
-import { CartRepository } from '../cart/cart.repository';
 import { MailService } from '../mail/mail.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -18,36 +16,18 @@ import { OrderFilterDto } from './dto/order-filter.dto';
 export class OrdersService {
   constructor(
     private readonly ordersRepository: OrdersRepository,
-    private readonly productsRepository: ProductsRepository,
     private readonly cartService: CartService,
-    private readonly cartRepository: CartRepository,
     private readonly mailService: MailService,
-    // DataSource es la conexion "raiz" de TypeORM. La necesitamos aca
-    // porque dataSource.transaction() es el punto de entrada para
-    // ejecutar varias operaciones como una sola unidad atomica.
     private readonly dataSource: DataSource,
   ) {}
 
-  // Convierte el carrito actual del usuario en un pedido formal.
-  // Esto cubre el flujo: carrito -> "finalizar compra" -> pedido con seguimiento.
   async createFromCart(userId: number, dto: CreateOrderDto) {
     const cartWithTotals = await this.cartService.viewCart(userId);
     if (cartWithTotals.items.length === 0) {
       throw new BadRequestException('The cart is empty');
     }
 
-    // dataSource.transaction() abre una transaccion de base de datos:
-    // TODO lo que pasa adentro del callback usa el mismo "manager"
-    // (piensen en el como una conexion exclusiva y temporal a la BD).
-    // Si en cualquier punto se lanza un error, TypeORM hace ROLLBACK
-    // automaticamente: es como si nada de lo que pasa aca adentro
-    // hubiera ocurrido. Si todo termina bien, hace COMMIT y los cambios
-    // quedan guardados de forma definitiva, todos juntos.
     const savedOrder = await this.dataSource.transaction(async (manager) => {
-      // Dentro de la transaccion no usamos this.productosRepository
-      // directamente, sino manager.getRepository(Producto): asi nos
-      // aseguramos de que las consultas participen de ESTA transaccion
-      // en particular, y no de una conexion suelta por fuera.
       const productsRepo = manager.getRepository(Product);
       const ordersRepo = manager.getRepository(Order);
       const cartsRepo = manager.getRepository(Cart);
@@ -55,12 +35,7 @@ export class OrdersService {
       const details: { product: Product; quantity: number; unitPrice: number }[] = [];
 
       for (const item of cartWithTotals.items) {
-        // setLock('pessimistic_write') traduce a un SELECT ... FOR UPDATE.
-        // Esto le dice a MySQL: "bloquea esta fila de producto hasta que
-        // termine mi transaccion". Si otro cliente intenta comprar el
-        // MISMO producto al mismo tiempo, su transaccion queda esperando
-        // hasta que la primera termine (commit o rollback), evitando que
-        // los dos lean "hay stock" antes de que ninguno lo descuente.
+  
         const product = await productsRepo
           .createQueryBuilder('product')
           .setLock('pessimistic_write')
@@ -72,9 +47,6 @@ export class OrdersService {
           throw new NotFoundException(`Product ${item.product.name} no longer exists`);
         }
 
-        // Revalidamos el stock ACA (con el dato recien leido y bloqueado),
-        // no confiamos en el valor que traiamos del carrito desde antes,
-        // porque pudo haber cambiado entre que se armo el carrito y ahora.
         if (product.stock < item.quantity) {
           throw new BadRequestException(
             `Insufficient stock for ${product.name}. Available: ${product.stock}`,
@@ -101,8 +73,6 @@ export class OrdersService {
       });
       const saved = await ordersRepo.save(order);
 
-      // Vaciamos el carrito DENTRO de la misma transaccion: si algo
-      // de lo anterior falla, el carrito tampoco se toca (rollback).
       const cart = await cartsRepo.findOne({ where: { user: { id: userId } } });
       if (cart) {
         cart.items = [];
@@ -111,13 +81,7 @@ export class OrdersService {
 
       return saved;
     });
-    // A partir de aca la transaccion ya hizo COMMIT: el pedido y el
-    // descuento de stock quedaron guardados de forma definitiva.
-
-    // La notificacion por email queda A PROPOSITO fuera de la transaccion:
-    // enviar un correo no es algo que se pueda "revertir" como un UPDATE,
-    // y no tiene sentido mantener bloqueado el producto en la BD mientras
-    // esperamos que responda un servidor SMTP externo.
+   
     const fullOrder = await this.ordersRepository.findOneBy({ id: savedOrder.id });
 
     if (fullOrder) {
@@ -141,9 +105,6 @@ export class OrdersService {
     return buildPaginatedResult(data, total, page, limit);
   }
 
-  // Historial: pedidos ya entregados. Una vez que un pedido llega a este
-  // estado, desaparece de findAll() y solo se puede consultar por aca.
-  // "month" ("YYYY-MM") o "year" ("YYYY") filtran por periodo puntual.
   async findDelivered(pagination: PaginationQueryDto, month?: string, year?: string) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
@@ -190,21 +151,18 @@ export class OrdersService {
 
   const expectedNextStatus = nextStatus[order.status];
 
-  // No permitir cambiar un pedido ya entregado
   if (order.status === OrderStatus.DELIVERED) {
     throw new BadRequestException(
       'El pedido ya fue entregado y no puede cambiar de estado.',
     );
   }
 
-  // No permitir saltear estados
   if (dto.status !== expectedNextStatus) {
     throw new BadRequestException(
       `No se puede pasar de "${order.status}" a "${dto.status}".`,
     );
   }
 
-  // Para entregar, el cliente debe haber sido notificado
   if (
     dto.status === OrderStatus.DELIVERED &&
     !order.customerNotified
@@ -280,6 +238,5 @@ async notifyCustomer(
   order.customerNotifiedAt = new Date();
 
   return this.ordersRepository.save(order);
-
 }
 }

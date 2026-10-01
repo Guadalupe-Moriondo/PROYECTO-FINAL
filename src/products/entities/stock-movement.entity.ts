@@ -6,8 +6,6 @@ export enum MovementType {
   OUT = 'out',
 }
 
-// Registra CADA cambio de stock (requerimiento funcional 14), sirve
-// tambien como historial/auditoria de todo lo que paso con cada producto
 @Entity('stock_movements')
 export class StockMovement {
   @PrimaryGeneratedColumn()
@@ -24,7 +22,7 @@ export class StockMovement {
   quantity!: number;
 
   @Column({ nullable: true })
-  reason!: string; // ej: "compra a proveedor", "ajuste por inventario", "venta"
+  reason!: string; 
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

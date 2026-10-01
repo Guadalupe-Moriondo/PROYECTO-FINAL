@@ -11,8 +11,6 @@ import { UsersModule } from '../users/users.module';
   imports: [
     UsersModule,
     PassportModule,
-    // forRootAsync porque necesitamos leer el JWT_SECRET desde .env
-    // a traves de ConfigService, en vez de hardcodearlo
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -23,8 +21,6 @@ import { UsersModule } from '../users/users.module';
         }
         return {
           secret: jwtSecret,
-          // `expiresIn` ahora requiere el tipo `StringValue` de la librería `ms`
-          // (ej: '8h', '15m', '7d'), por eso el cast explícito.
           signOptions: {
             expiresIn: (configService.get<string>('JWT_EXPIRES_IN') || '8h') as import('ms').StringValue,
           },

@@ -6,7 +6,6 @@ export class Product {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // Codigo interno del repuesto, para busqueda rapida (requerimiento funcional 4)
   @Column({ unique: true, length: 50 })
   code!: string;
 
@@ -16,7 +15,6 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
-  // Descripcion tecnica y compatibilidad de maquinaria (objetivo especifico)
   @Column({ type: 'text', nullable: true })
   machineryCompatibility!: string;
 
@@ -27,7 +25,6 @@ export class Product {
   @Column({ default: 0 })
   stock!: number;
 
-  // Notificacion visual de stock minimo (requerimiento del alcance)
   @Column({ name: 'min_stock', default: 5 })
   minStock!: number;
 
@@ -35,12 +32,11 @@ export class Product {
   imageUrl!: string;
 
   @Column({ default: true })
-  active!: boolean; // permite "eliminar" logicamente sin borrar el historial de pedidos
+  active!: boolean; 
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
-  // Relacion muchos a uno: muchos productos pertenecen a una categoria
   @ManyToOne(() => Category, (category) => category.products, { eager: false })
   @JoinColumn({ name: 'category_id' })
   category!: Category;

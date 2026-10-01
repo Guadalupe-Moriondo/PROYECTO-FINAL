@@ -21,7 +21,6 @@ export class Order {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // Numero de orden legible para el cliente (distinto del id interno)
   @Column({ name: 'order_number', unique: true })
   orderNumber!: string;
 
