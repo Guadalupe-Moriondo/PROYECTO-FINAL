@@ -1,5 +1,5 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger, ValidationPipe} from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { ArgumentsHost, Catch, ClassSerializerInterceptor, ExceptionFilter, HttpException, HttpStatus, Logger, ValidationPipe} from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { join } from 'path';
@@ -61,6 +61,8 @@ async function bootstrap() {
       transform: true, 
     }),
   );
+
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   app.useGlobalFilters(new AllExceptionsFilter());
 

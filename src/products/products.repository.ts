@@ -84,4 +84,15 @@ export class ProductsRepository extends Repository<Product> {
   async adjustStock(productId: number, quantity: number): Promise<void> {
     await this.increment({ id: productId }, 'stock', quantity);
   }
+
+  async decrementStockIfAvailable(productId: number, quantity: number): Promise<boolean> {
+    const qty = Number(quantity);
+    const result = await this.createQueryBuilder()
+      .update(Product)
+      .set({ stock: () => `stock - ${qty}` })
+      .where('id = :id AND stock >= :qty', { id: productId, qty })
+      .execute();
+
+    return (result.affected ?? 0) > 0;
+  }
 }

@@ -9,6 +9,7 @@ import { PaginationQueryDto } from '../common/pagination';
 import {OrderHistoryQueryDto} from './dto/history-query.dto';
 import { MyOrdersQueryDto } from './dto/my-orders-query.dto';
 import { OrderFilterDto } from './dto/order-filter.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
@@ -24,9 +25,7 @@ export class OrdersController {
 
   @Get('mine')
   myOrders(@Req() req: any, @Query() query: MyOrdersQueryDto) {
-    const delivered =
-      query.status === 'delivered' ? true : query.status === 'pending' ? false : undefined;
-    return this.ordersService.findByUser(req.user.id, query, delivered);
+    return this.ordersService.findByUser(req.user.id, query, query.status);
   }
 
   @UseGuards(RolesGuard)
@@ -36,6 +35,8 @@ export class OrdersController {
     return this.ordersService.findAll(pagination);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @Get('search')
   search(@Query() filters: OrderFilterDto) {
     return this.ordersService.search(filters);
@@ -56,8 +57,8 @@ export class OrdersController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.ordersService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.ordersService.findOneForUser(id, req.user);
   }
 
   @UseGuards(RolesGuard)
@@ -65,6 +66,15 @@ export class OrdersController {
   @Put(':id/status')
   updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
     return this.ordersService.updateStatus(id, dto);
+  }
+
+  @Put(':id/cancel')
+  cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() dto: CancelOrderDto,
+  ) {
+    return this.ordersService.cancel(id, req.user, dto);
   }
 
   @UseGuards(RolesGuard)

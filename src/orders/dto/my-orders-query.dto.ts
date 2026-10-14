@@ -3,6 +3,6 @@ import { PaginationQueryDto } from '../../common/pagination';
 
 export class MyOrdersQueryDto extends PaginationQueryDto {
   @IsOptional()
-  @IsIn(['pending', 'delivered'])
-  status?: 'pending' | 'delivered';
+  @IsIn(['pending', 'delivered', 'cancelled'])
+  status?: 'pending' | 'delivered' | 'cancelled';
 }

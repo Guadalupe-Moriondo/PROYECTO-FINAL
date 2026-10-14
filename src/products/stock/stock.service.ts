@@ -20,10 +20,19 @@ export class StockService {
 
     if (dto.type === MovementType.OUT && product.stock < dto.quantity) {
     throw new BadRequestException('Stock insuficiente.');
-  }
-    const delta = dto.type === MovementType.IN ? dto.quantity : -dto.quantity;
-    await this.productsRepository.adjustStock(dto.productId, delta);
-
+    }
+    
+    if (dto.type === MovementType.OUT) {
+      // Descuento atómico: falla si otro egreso se llevó el stock en el medio
+      const done = await this.productsRepository.decrementStockIfAvailable(
+        dto.productId,
+        dto.quantity,
+      );
+      if (!done) throw new BadRequestException('Stock insuficiente.');
+    } else {
+      await this.productsRepository.adjustStock(dto.productId, dto.quantity);
+    }
+    
     const movement = this.stockRepository.create({
       product,
       type: dto.type,

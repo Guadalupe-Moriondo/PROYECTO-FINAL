@@ -6,7 +6,7 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { PaginationQueryDto } from 'src/common/pagination';
+import { PaginationQueryDto } from '../common/pagination';
 
 @Controller('categories')
 export class CategoriesController {

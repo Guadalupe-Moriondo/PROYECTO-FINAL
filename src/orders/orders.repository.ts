@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, Repository,Not,Between } from 'typeorm';
+import { DataSource, Repository,Not,Between, In } from 'typeorm';
 import { Order,OrderStatus } from './entities/order.entity';
 import { OrderFilterDto } from './dto/order-filter.dto';
 
@@ -13,7 +13,7 @@ export class OrdersRepository extends Repository<Order> {
     userId: number,
     page: number,
     limit: number,
-    delivered?: boolean,
+    status?: 'pending' | 'delivered' | 'cancelled',
   ): Promise<[Order[], number]> {
     const query = this.createQueryBuilder('order')
       .leftJoinAndSelect('order.user', 'user')
@@ -21,13 +21,13 @@ export class OrdersRepository extends Repository<Order> {
       .leftJoinAndSelect('details.product', 'product')
       .where('user.id = :userId', { userId });
 
-    if (delivered === true) {
-      query.andWhere('order.status = :delivered', {
-        delivered: OrderStatus.DELIVERED,
-      });
-    } else if (delivered === false) {
-      query.andWhere('order.status != :delivered', {
-        delivered: OrderStatus.DELIVERED,
+    if (status === 'delivered') {
+      query.andWhere('order.status = :delivered', { delivered: OrderStatus.DELIVERED });
+    } else if (status === 'cancelled') {
+      query.andWhere('order.status = :cancelled', { cancelled: OrderStatus.CANCELLED });
+    } else if (status === 'pending') {
+      query.andWhere('order.status NOT IN (:...closed)', {
+        closed: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
       });
     }
 
@@ -60,7 +60,7 @@ export class OrdersRepository extends Repository<Order> {
 
   findAllPaginated(page: number, limit: number): Promise<[Order[], number]> {
     return this.findAndCount({
-      where: { status: Not(OrderStatus.DELIVERED) },
+      where: { status: Not(In([OrderStatus.DELIVERED, OrderStatus.CANCELLED])) },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -102,8 +102,8 @@ export class OrdersRepository extends Repository<Order> {
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.details', 'details')
       .leftJoinAndSelect('details.product', 'product')
-      .where('order.status != :delivered', {
-        delivered: OrderStatus.DELIVERED,
+      .where('order.status NOT IN (:...closed)', {
+        closed: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
       });
 
     if (filters.search?.trim()) {

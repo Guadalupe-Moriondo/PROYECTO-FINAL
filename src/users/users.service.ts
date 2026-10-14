@@ -118,6 +118,10 @@ export class UsersService {
     return this.usersRepository.findByEmail(email);
   }
 
+  findById(id: number) {
+    return this.usersRepository.findOneBy({ id });
+  }
+
   async updateRole(
     id: number,
     newRole: UserRole,
@@ -247,26 +251,6 @@ export class UsersService {
     };
   }
 
-  async remove(id: number) {
-
-    const user = await this.usersRepository.findOneBy({ id });
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    if (user.owner) {
-      throw new ConflictException(
-        'No se puede eliminar el administrador principal.',
-      );
-    }
-
-    await this.usersRepository.remove(user);
-
-    return {
-      message: 'Usuario eliminado correctamente',
-    };
-  }
 }
 
 

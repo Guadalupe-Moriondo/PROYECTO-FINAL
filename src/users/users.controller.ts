@@ -7,7 +7,6 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { Delete } from '@nestjs/common';
 
 @Controller('users')
 export class UsersController {
@@ -39,6 +38,8 @@ export class UsersController {
       );
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
@@ -53,15 +54,6 @@ export class UsersController {
     @Req() req: any,
   ) {
     return this.usersService.updateRole(id, dto.role, req.user);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  @Delete(':id')
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    return this.usersService.remove(id);
   }
 
   @UseGuards(JwtAuthGuard)

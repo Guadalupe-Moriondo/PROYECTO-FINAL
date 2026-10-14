@@ -8,6 +8,7 @@ export enum OrderStatus {
   IN_PREPARATION = 'in_preparation',
   WITHDRAW = 'withdraw',
   DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
 }
 
 export enum PaymentMethod {
@@ -65,4 +66,13 @@ export class Order {
     nullable: true,
   })
   customerNotifiedAt!: Date | null;
+
+  @Column({ name: 'cancelled_at', type: 'timestamp', nullable: true })
+  cancelledAt!: Date | null;
+
+  @Column({ name: 'cancel_reason', type: 'varchar', length: 255, nullable: true })
+  cancelReason!: string | null;
+
+  @Column({ name: 'cancelled_by', type: 'varchar', length: 20, nullable: true })
+  cancelledBy!: 'customer' | 'admin' | null;
   }

@@ -92,6 +92,7 @@ export class MailService {
       in_preparation: 'En preparación',
       withdraw: 'Listo para retirar',
       delivered: 'Entregado',
+      cancelled: 'Cancelado',
     };
 
     const statusLabel = statusLabels[order.status] ?? order.status;
