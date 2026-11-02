@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { PaginationQueryDto } from '../../common/pagination';
+import { MovementFilterDto } from '../dto/movement-filter.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
@@ -17,9 +18,9 @@ export class StockController {
     return this.stockService.registerMovement(dto);
   }
 
- @Get('movements')
-  history(@Query() pagination: PaginationQueryDto) {
-    return this.stockService.history(pagination);
+  @Get('movements')
+  history(@Query() filters: MovementFilterDto) {
+    return this.stockService.history(filters);
   }
 
   @Get('movements/:productId')

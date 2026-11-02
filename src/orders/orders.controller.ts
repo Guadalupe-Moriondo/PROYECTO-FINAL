@@ -41,6 +41,13 @@ export class OrdersController {
   search(@Query() filters: OrderFilterDto) {
     return this.ordersService.search(filters);
   }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Get('cancelled')
+  findCancelled(@Query() pagination: PaginationQueryDto) {
+    return this.ordersService.findCancelled(pagination);
+  }
   
   @UseGuards(RolesGuard)
   @Get('/statistics')

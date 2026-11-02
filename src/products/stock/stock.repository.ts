@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import { StockMovement } from '../entities/stock-movement.entity';
+import { StockMovement, MovementType } from '../entities/stock-movement.entity';
 
 @Injectable()
 export class StockRepository extends Repository<StockMovement> {
@@ -15,13 +15,37 @@ export class StockRepository extends Repository<StockMovement> {
     });
   }
 
-  findAllPaginated(page: number, limit: number) {
-  return this.findAndCount({
-    order: {
-      createdAt: 'DESC',
-    },
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-}
+  async findAllPaginated(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<[StockMovement[], number]> {
+    const query = this.createQueryBuilder('movement')
+      .leftJoinAndSelect('movement.product', 'product')
+      .orderBy('movement.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const term = search?.trim().toLowerCase();
+
+    if (term) {
+      query.where(
+        `(
+          LOWER(product.name) LIKE :search
+          OR LOWER(product.code) LIKE :search
+          OR LOWER(movement.reason) LIKE :search
+          OR DATE_FORMAT(movement.createdAt, '%d/%m/%Y') LIKE :search
+          OR (movement.type = :inType AND 'entrada' LIKE :search)
+          OR (movement.type = :outType AND 'salida' LIKE :search)
+        )`,
+        {
+          search: `%${term}%`,
+          inType: MovementType.IN,
+          outType: MovementType.OUT,
+        },
+      );
+    }
+    
+    return query.getManyAndCount();
+  }
 }

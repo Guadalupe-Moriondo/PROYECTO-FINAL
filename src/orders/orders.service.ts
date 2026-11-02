@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { OrdersRepository } from './orders.repository';
+import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { Order } from './entities/order.entity';
 import { OrderDetail } from './entities/order-detail.entity';
@@ -66,7 +67,7 @@ export class OrdersService {
             product: { id: product.id },
             type: MovementType.OUT,
             quantity: item.quantity,
-            reason: 'Venta online (pedido)',
+            reason: 'Venta online',
           }),
         );
 
@@ -105,17 +106,24 @@ export class OrdersService {
     return savedOrder;
   }
 
-    async findByUser(userId: number,pagination: PaginationQueryDto,status?: 'pending' | 'delivered' | 'cancelled') {
-      const page = pagination.page ?? 1;
-      const limit = pagination.limit ?? 10;
-      const [data, total] = await this.ordersRepository.findByUserId(userId, page, limit, status);
+  async findByUser(userId: number,pagination: PaginationQueryDto,status?: 'pending' | 'delivered' | 'cancelled') {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const [data, total] = await this.ordersRepository.findByUserId(userId, page, limit, status);
       return buildPaginatedResult(data, total, page, limit);
-    }
+  }
 
   async findAll(pagination: PaginationQueryDto) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
     const [data, total] = await this.ordersRepository.findAllPaginated(page, limit);
+    return buildPaginatedResult(data, total, page, limit);
+  }
+
+  async findCancelled(pagination: PaginationQueryDto) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const [data, total] = await this.ordersRepository.findCancelledPaginated(page, limit);
     return buildPaginatedResult(data, total, page, limit);
   }
 
@@ -295,6 +303,7 @@ export class OrdersService {
       order.status = OrderStatus.CANCELLED;
       order.cancelledAt = new Date();
       order.cancelledBy = isAdmin ? 'admin' : 'customer';
+      order.cancelledByUser = isAdmin ? ({ id: requester.id } as User) : null;
       order.cancelReason = isAdmin ? dto.reason?.trim() || null : null;
       return manager.save(order);
     });

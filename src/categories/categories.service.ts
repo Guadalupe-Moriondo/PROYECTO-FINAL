@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -39,8 +39,15 @@ export class CategoriesService {
   }
 
   async remove(id: number) {
-  const category = await this.findOne(id);
-  category.active = false;
-  return this.categoriesRepository.save(category);
-}
+    const category = await this.findOne(id);
+
+    if (Number(category.productCount) > 0) {
+      throw new BadRequestException(
+        'No se puede dar de baja la categoría porque tiene productos activos asociados. Reasignalos o dalos de baja primero.',
+      );
+    }
+
+    category.active = false;
+    return this.categoriesRepository.save(category);
+  }
 }

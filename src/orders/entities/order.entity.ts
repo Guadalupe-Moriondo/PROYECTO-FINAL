@@ -75,4 +75,8 @@ export class Order {
 
   @Column({ name: 'cancelled_by', type: 'varchar', length: 20, nullable: true })
   cancelledBy!: 'customer' | 'admin' | null;
-  }
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'cancelled_by_user_id' })
+  cancelledByUser!: User | null;
+}

@@ -5,7 +5,7 @@ import { CreateMovementDto } from '../dto/create-movement.dto';
 import { MovementType } from '../entities/stock-movement.entity';
 import { BadRequestException} from '@nestjs/common';
 import { buildPaginatedResult, PaginationQueryDto } from '../../common/pagination';
-
+import { MovementFilterDto } from '../dto/movement-filter.dto';
 
 @Injectable()
 export class StockService {
@@ -46,12 +46,15 @@ export class StockService {
     return this.stockRepository.findByProduct(productId);
   }
 
-  async history(pagination: PaginationQueryDto) {
-    const page = pagination.page ?? 1;
-    const limit = pagination.limit ?? 10;
+  async history(filters: MovementFilterDto) {
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 10;
 
-    const [data, total] =
-      await this.stockRepository.findAllPaginated(page, limit);
+    const [data, total] = await this.stockRepository.findAllPaginated(
+      page,
+      limit,
+      filters.search,
+    );
 
     return buildPaginatedResult(data, total, page, limit);
   }

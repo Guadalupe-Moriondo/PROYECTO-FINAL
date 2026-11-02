@@ -67,6 +67,16 @@ export class OrdersRepository extends Repository<Order> {
     });
   }
 
+  findCancelledPaginated(page: number, limit: number): Promise<[Order[], number]> {
+    return this.findAndCount({
+      where: { status: OrderStatus.CANCELLED },
+      relations: { cancelledByUser: true },
+      order: { cancelledAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+
   findDeliveredPaginated(
     page: number,
     limit: number,
@@ -98,13 +108,26 @@ export class OrdersRepository extends Repository<Order> {
   async searchWithFilters(
     filters: OrderFilterDto,
   ): Promise<[Order[], number]> {
+    const onlyCancelled = filters.status === 'cancelled';
+
     const query = this.createQueryBuilder('order')
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.details', 'details')
-      .leftJoinAndSelect('details.product', 'product')
-      .where('order.status NOT IN (:...closed)', {
+      .leftJoinAndSelect('details.product', 'product');
+
+    if (onlyCancelled) {
+      query.where('order.status = :cancelledStatus', {
+        cancelledStatus: OrderStatus.CANCELLED,
+      });
+    } else {
+      query.where('order.status NOT IN (:...closed)', {
         closed: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
       });
+    }
+
+    if (onlyCancelled) {
+      query.leftJoinAndSelect('order.cancelledByUser', 'cancelledByUser');
+    }
 
     if (filters.search?.trim()) {
       const search = filters.search
@@ -118,6 +141,11 @@ export class OrdersRepository extends Repository<Order> {
           OR LOWER(user.email) LIKE :search
           OR DATE_FORMAT(order.createdAt, '%d/%m/%Y') LIKE :search
           OR DATE_FORMAT(order.createdAt, '%Y-%m-%d') LIKE :search
+          OR LOWER(order.cancelReason) LIKE :search
+          OR DATE_FORMAT(order.cancelledAt, '%d/%m/%Y') LIKE :search
+          OR (order.cancelledBy = 'admin' AND 'administrador' LIKE :search)
+          OR (order.cancelledBy = 'customer' AND 'cliente' LIKE :search)
+          ${onlyCancelled ? 'OR LOWER(cancelledByUser.name) LIKE :search' : ''}
           OR (
             order.status = :pending
             AND 'pendiente' LIKE :search
@@ -166,7 +194,7 @@ export class OrdersRepository extends Repository<Order> {
       .setParameter('confirmed', OrderStatus.CONFIRMED)
       .setParameter('pending', OrderStatus.PENDING)
       .orderBy('status_priority', 'ASC')
-      .addOrderBy('order.createdAt', 'DESC')
+      .addOrderBy(onlyCancelled ? 'order.cancelledAt' : 'order.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
 
