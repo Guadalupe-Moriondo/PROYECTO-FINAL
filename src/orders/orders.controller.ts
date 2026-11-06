@@ -63,6 +63,13 @@ export class OrdersController {
     return this.ordersService.findDelivered(query, query.month,query.year);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Get(':id/history')
+  findStatusHistory(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.findStatusHistory(id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.ordersService.findOneForUser(id, req.user);
@@ -71,26 +78,19 @@ export class OrdersController {
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Put(':id/status')
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
-    return this.ordersService.updateStatus(id, dto);
+  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto, @Req() req: any,) {
+    return this.ordersService.updateStatus(id, dto, req.user.id);
   }
 
   @Put(':id/cancel')
-  cancel(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-    @Body() dto: CancelOrderDto,
-  ) {
+  cancel(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Body() dto: CancelOrderDto,) {
     return this.ordersService.cancel(id, req.user, dto);
   }
 
   @UseGuards(RolesGuard)
   @Roles('admin')
   @Put(':id/notify')
-  notifyCustomer(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: { method: 'whatsapp' },
-  ) {
+  notifyCustomer(@Param('id', ParseIntPipe) id: number, @Body() body: { method: 'whatsapp' },) {
     return this.ordersService.notifyCustomer(id, body.method);
   } 
 }

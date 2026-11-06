@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards,Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards,Query, Req} from '@nestjs/common';
 import { StockService } from './stock.service';
 import { CreateMovementDto } from '../dto/create-movement.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -14,8 +14,8 @@ export class StockController {
   constructor(private readonly stockService: StockService) {}
 
   @Post('movements')
-  register(@Body() dto: CreateMovementDto) {
-    return this.stockService.registerMovement(dto);
+  register(@Body() dto: CreateMovementDto, @Req() req: any) {
+    return this.stockService.registerMovement(dto, req.user.id);
   }
 
   @Get('movements')

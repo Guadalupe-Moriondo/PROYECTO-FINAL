@@ -14,7 +14,7 @@ export class StockService {
     private readonly productsRepository: ProductsRepository,
   ) {}
 
-  async registerMovement(dto: CreateMovementDto) {
+  async registerMovement(dto: CreateMovementDto, userId: number) {
     const product = await this.productsRepository.findOneBy({ id: dto.productId });
     if (!product) throw new NotFoundException('Producto no encontrado');
 
@@ -38,6 +38,7 @@ export class StockService {
       type: dto.type,
       quantity: dto.quantity,
       reason: dto.reason,
+      user: { id: userId },
     });
     return this.stockRepository.save(movement);
   }

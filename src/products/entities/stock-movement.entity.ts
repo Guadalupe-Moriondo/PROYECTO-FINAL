@@ -1,5 +1,7 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Product } from './product.entity';
+import { User } from '../../users/entities/user.entity';
+import { Order } from '../../orders/entities/order.entity';
 
 export enum MovementType {
   IN = 'in',
@@ -23,6 +25,14 @@ export class StockMovement {
 
   @Column({ nullable: true })
   reason!: string; 
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'user_id' })
+  user!: User | null;
+
+  @ManyToOne(() => Order, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'order_id' })
+  order!: Order | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

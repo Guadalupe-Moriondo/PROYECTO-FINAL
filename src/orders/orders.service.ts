@@ -5,6 +5,7 @@ import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { Order } from './entities/order.entity';
 import { OrderDetail } from './entities/order-detail.entity';
+import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { StockMovement, MovementType } from '../products/entities/stock-movement.entity';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { Cart } from '../cart/entities/cart.entity';
@@ -32,16 +33,16 @@ export class OrdersService {
       throw new BadRequestException('The cart is empty');
     }
 
-      const sortedItems = [...cartWithTotals.items].sort((a, b) => a.product.id - b.product.id,);
-      const savedOrder = await this.dataSource.transaction(async (manager) => {
+    const sortedItems = [...cartWithTotals.items].sort((a, b) => a.product.id - b.product.id);
+    const savedOrder = await this.dataSource.transaction(async (manager) => {
       const productsRepo = manager.getRepository(Product);
       const ordersRepo = manager.getRepository(Order);
       const cartsRepo = manager.getRepository(Cart);
 
       const details: { product: Product; quantity: number; unitPrice: number }[] = [];
+      const soldItems: { productId: number; quantity: number }[] = [];
 
       for (const item of sortedItems) {
-  
         const product = await productsRepo
           .createQueryBuilder('product')
           .setLock('pessimistic_write')
@@ -62,14 +63,7 @@ export class OrdersService {
         product.stock -= item.quantity;
         await productsRepo.save(product);
 
-        await manager.save(
-          manager.create(StockMovement, {
-            product: { id: product.id },
-            type: MovementType.OUT,
-            quantity: item.quantity,
-            reason: 'Venta online',
-          }),
-        );
+        soldItems.push({ productId: product.id, quantity: item.quantity });
 
         details.push({
           product,
@@ -88,6 +82,27 @@ export class OrdersService {
       });
       const saved = await ordersRepo.save(order);
 
+      for (const sold of soldItems) {
+        await manager.save(
+          manager.create(StockMovement, {
+            product: { id: sold.productId },
+            type: MovementType.OUT,
+            quantity: sold.quantity,
+            reason: 'Venta online',
+            user: { id: userId },
+            order: { id: saved.id },
+          }),
+        );
+      }
+
+      await manager.save(
+        manager.create(OrderStatusHistory, {
+          order: { id: saved.id },
+          status: OrderStatus.PENDING,
+          changedBy: { id: userId },
+        }),
+      );
+
       const cart = await cartsRepo.findOne({ where: { user: { id: userId } } });
       if (cart) {
         cart.items = [];
@@ -96,7 +111,7 @@ export class OrdersService {
 
       return saved;
     });
-   
+
     const fullOrder = await this.ordersRepository.findOneBy({ id: savedOrder.id });
 
     if (fullOrder) {
@@ -106,11 +121,11 @@ export class OrdersService {
     return savedOrder;
   }
 
-  async findByUser(userId: number,pagination: PaginationQueryDto,status?: 'pending' | 'delivered' | 'cancelled') {
+  async findByUser(userId: number, pagination: PaginationQueryDto, status?: 'pending' | 'delivered' | 'cancelled') {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
     const [data, total] = await this.ordersRepository.findByUserId(userId, page, limit, status);
-      return buildPaginatedResult(data, total, page, limit);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async findAll(pagination: PaginationQueryDto) {
@@ -157,18 +172,28 @@ export class OrdersService {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 10;
 
-    const [data, total] =
-      await this.ordersRepository.searchWithFilters(filters);
+    const [data, total] = await this.ordersRepository.searchWithFilters(filters);
 
-    return buildPaginatedResult(
-      data,
-      total,
-      page,
-      limit,
-    );
+    return buildPaginatedResult(data, total, page, limit);
   }
 
-  async updateStatus(id: number, dto: UpdateStatusDto) {
+  async findStatusHistory(id: number) {
+    await this.findOne(id);
+
+    return this.dataSource.getRepository(OrderStatusHistory).find({
+      where: { order: { id } },
+      relations: { changedBy: true },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        changedBy: { id: true, name: true, role: true },
+      },
+      order: { createdAt: 'ASC', id: 'ASC' },
+    });
+  }
+
+  async updateStatus(id: number, dto: UpdateStatusDto, adminId: number) {
     const order = await this.findOne(id);
 
     const nextStatus: Record<OrderStatus, OrderStatus | null> = {
@@ -213,14 +238,24 @@ export class OrdersService {
       order.deliveredAt = new Date();
     }
 
-    const updated = await this.ordersRepository.save(order);
+    const updated = await this.dataSource.transaction(async (manager) => {
+      const saved = await manager.save(order);
+      await manager.save(
+        manager.create(OrderStatusHistory, {
+          order: { id: saved.id },
+          status: dto.status,
+          changedBy: { id: adminId },
+        }),
+      );
+      return saved;
+    });
 
-      void this.mailService.notifyStatusChange(updated);
+    void this.mailService.notifyStatusChange(updated);
 
     return updated;
-    }
+  }
 
-    async getStatistics() {
+  async getStatistics() {
     const delivered = await this.ordersRepository.find({
       where: { status: OrderStatus.DELIVERED },
     });
@@ -296,6 +331,8 @@ export class OrdersService {
             type: MovementType.IN,
             quantity: detail.quantity,
             reason: `Cancelación pedido ${order.orderNumber}`,
+            user: { id: requester.id },
+            order: { id: order.id },
           }),
         );
       }
@@ -305,7 +342,16 @@ export class OrdersService {
       order.cancelledBy = isAdmin ? 'admin' : 'customer';
       order.cancelledByUser = isAdmin ? ({ id: requester.id } as User) : null;
       order.cancelReason = isAdmin ? dto.reason?.trim() || null : null;
-      return manager.save(order);
+
+      const savedOrder = await manager.save(order);
+      await manager.save(
+        manager.create(OrderStatusHistory, {
+          order: { id: savedOrder.id },
+          status: OrderStatus.CANCELLED,
+          changedBy: { id: requester.id },
+        }),
+      );
+      return savedOrder;
     });
 
     const full = await this.ordersRepository.findOneBy({ id: cancelled.id });

@@ -22,6 +22,10 @@ export class StockRepository extends Repository<StockMovement> {
   ): Promise<[StockMovement[], number]> {
     const query = this.createQueryBuilder('movement')
       .leftJoinAndSelect('movement.product', 'product')
+      .leftJoin('movement.user', 'mUser')
+      .addSelect(['mUser.id', 'mUser.name'])
+      .leftJoin('movement.order', 'mOrder')
+      .addSelect(['mOrder.id', 'mOrder.orderNumber'])
       .orderBy('movement.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
