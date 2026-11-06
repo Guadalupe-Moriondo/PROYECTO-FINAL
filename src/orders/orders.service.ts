@@ -177,8 +177,17 @@ export class OrdersService {
     return buildPaginatedResult(data, total, page, limit);
   }
 
-  async findStatusHistory(id: number) {
-    await this.findOne(id);
+  async findStatusHistory(
+    id: number,
+    requester: { id: number; role: string },
+  ) {
+    const order = await this.findOne(id);
+
+    // Los administradores pueden consultar cualquier pedido.
+    // Los clientes solamente pueden consultar sus propios pedidos.
+    if (requester.role !== 'admin' && order.user?.id !== requester.id) {
+      throw new ForbiddenException('No tenés permiso para consultar este historial.');
+    }
 
     return this.dataSource.getRepository(OrderStatusHistory).find({
       where: { order: { id } },

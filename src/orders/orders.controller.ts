@@ -63,11 +63,12 @@ export class OrdersController {
     return this.ordersService.findDelivered(query, query.month,query.year);
   }
 
-  @UseGuards(RolesGuard)
-  @Roles('admin')
   @Get(':id/history')
-  findStatusHistory(@Param('id', ParseIntPipe) id: number) {
-    return this.ordersService.findStatusHistory(id);
+  async getStatusHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req,
+  ) {
+    return this.ordersService.findStatusHistory(id, req.user);
   }
 
   @Get(':id')
