@@ -189,7 +189,7 @@ export class OrdersService {
       throw new ForbiddenException('No tenés permiso para consultar este historial.');
     }
 
-    return this.dataSource.getRepository(OrderStatusHistory).find({
+    const entries = await this.dataSource.getRepository(OrderStatusHistory).find({
       where: { order: { id } },
       relations: { changedBy: true },
       select: {
@@ -200,6 +200,14 @@ export class OrdersService {
       },
       order: { createdAt: 'ASC', id: 'ASC' },
     });
+
+    if (requester.role === 'admin') return entries;
+
+    return entries.map((e) => ({
+      id: e.id,
+      status: e.status,
+      createdAt: e.createdAt,
+    }));
   }
 
   async updateStatus(id: number, dto: UpdateStatusDto, adminId: number) {
@@ -241,6 +249,8 @@ export class OrdersService {
       );
     }
 
+    const previousStatus = order.status;
+
     order.status = dto.status;
 
     if (dto.status === OrderStatus.DELIVERED) {
@@ -248,15 +258,27 @@ export class OrdersService {
     }
 
     const updated = await this.dataSource.transaction(async (manager) => {
-      const saved = await manager.save(order);
+      const result = await manager.update(
+        Order,
+        { id: order.id, status: previousStatus },
+        { status: dto.status, deliveredAt: order.deliveredAt },
+      );
+
+      if (!result.affected) {
+        throw new BadRequestException(
+          'El pedido cambió de estado mientras lo modificabas. Actualizá la pantalla.',
+        );
+      }
+
       await manager.save(
         manager.create(OrderStatusHistory, {
-          order: { id: saved.id },
+          order: { id: order.id },
           status: dto.status,
           changedBy: { id: adminId },
         }),
       );
-      return saved;
+
+      return order;
     });
 
     void this.mailService.notifyStatusChange(updated);
@@ -265,44 +287,29 @@ export class OrdersService {
   }
 
   async getStatistics() {
-    const delivered = await this.ordersRepository.find({
-      where: { status: OrderStatus.DELIVERED },
-    });
+    const rows = await this.ordersRepository
+      .createQueryBuilder('o')
+      .select("DATE_FORMAT(o.deliveredAt, '%Y-%m')", 'month')
+      .addSelect('COUNT(*)', 'orders')
+      .addSelect('SUM(o.total)', 'total')
+      .where('o.status = :status', { status: OrderStatus.DELIVERED })
+      .andWhere('o.deliveredAt IS NOT NULL')
+      .groupBy('month')
+      .getRawMany();
 
-    const monthly = {};
-    const yearly = {};
+    const monthly: Record<string, { orders: number; total: number }> = {};
+    const yearly: Record<string, { orders: number; total: number }> = {};
 
-    delivered.forEach(order => {
-      const date = new Date(order.createdAt);
-
-      const monthKey = `${date.getFullYear()}-${String(
-        date.getMonth() + 1,
-      ).padStart(2, '0')}`;
-
-      const yearKey = `${date.getFullYear()}`;
-
-      monthly[monthKey] ??= {
-        orders: 0,
-        total: 0,
-      };
-
-      yearly[yearKey] ??= {
-        orders: 0,
-        total: 0,
-      };
-
-      monthly[monthKey].orders++;
-      monthly[monthKey].total += Number(order.total);
-
-      yearly[yearKey].orders++;
-      yearly[yearKey].total += Number(order.total);
-    });
-
-    return {
-      delivered,
-      monthly,
-      yearly,
-    };
+    for (const r of rows) {
+      const orders = Number(r.orders);
+      const total = Number(r.total);
+      const year = String(r.month).slice(0, 4);
+      monthly[r.month] = { orders, total };
+      yearly[year] ??= { orders: 0, total: 0 };
+      yearly[year].orders += orders;
+      yearly[year].total += total;
+    }
+    return { monthly, yearly };
   }
 
   async cancel(id: number, requester: { id: number; role: string }, dto: CancelOrderDto) {

@@ -56,7 +56,7 @@ export class CartService {
     const cart = await this.getOrCreate(userId);
     const item = cart.items.find((i) => i.id === itemId);
     if (!item) throw new NotFoundException('Item not found in cart');
-    if (quantity <= 0) {throw new BadRequestException('Quantity must be greater than zero');}
+    if (!Number.isInteger(quantity) || quantity <= 0) {throw new BadRequestException('La cantidad debe ser un número entero mayor a cero');}
     if (!item.product.active) {throw new BadRequestException('Product is no longer available');}
     if (quantity > item.product.stock) {throw new BadRequestException('Insufficient stock');}
     

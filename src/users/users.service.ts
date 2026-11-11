@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UsersRepository } from './users.repository';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -40,6 +40,12 @@ export class UsersService {
   }
 
   async findAll(page = 1, search = '', role = 'all') {
+
+    page = Math.max(1, page);
+    if (role !== 'all' && !Object.values(UserRole).includes(role as UserRole)) {
+      throw new BadRequestException('Rol inválido');
+    }
+    
     const limit = 10;
 
     const query =
@@ -129,10 +135,10 @@ export class UsersService {
   ) {
 
     if (!requestedBy.owner) {
-      throw new ConflictException(
-        'Solo el administrador principal puede cambiar roles.',
-      );
+      throw new ForbiddenException('Solo el Super Administrador puede cambiar roles.');
     }
+
+
 
     const user = await this.usersRepository.findOneBy({ id });
 
@@ -141,9 +147,7 @@ export class UsersService {
     }
 
     if (user.owner) {
-      throw new ConflictException(
-        'No se puede modificar el rol del administrador principal.',
-      );
+      throw new ForbiddenException('No se puede modificar el rol del Super Administrador.');
     }
 
     if (

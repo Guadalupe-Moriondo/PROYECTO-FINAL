@@ -6,41 +6,43 @@ import { MovementType } from '../entities/stock-movement.entity';
 import { BadRequestException} from '@nestjs/common';
 import { buildPaginatedResult, PaginationQueryDto } from '../../common/pagination';
 import { MovementFilterDto } from '../dto/movement-filter.dto';
+import { DataSource } from 'typeorm';
+import { Product } from '../entities/product.entity';
+import { StockMovement } from '../entities/stock-movement.entity';
 
 @Injectable()
 export class StockService {
   constructor(
     private readonly stockRepository: StockRepository,
     private readonly productsRepository: ProductsRepository,
+    private readonly dataSource: DataSource,
   ) {}
 
   async registerMovement(dto: CreateMovementDto, userId: number) {
-    const product = await this.productsRepository.findOneBy({ id: dto.productId });
-    if (!product) throw new NotFoundException('Producto no encontrado');
+    return this.dataSource.transaction(async (manager) => {
+      const product = await manager.findOne(Product, {
+        where: { id: dto.productId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) throw new NotFoundException('Producto no encontrado');
 
-    if (dto.type === MovementType.OUT && product.stock < dto.quantity) {
-    throw new BadRequestException('Stock insuficiente.');
-    }
-    
-    if (dto.type === MovementType.OUT) {
-      // Descuento atómico: falla si otro egreso se llevó el stock en el medio
-      const done = await this.productsRepository.decrementStockIfAvailable(
-        dto.productId,
-        dto.quantity,
+      if (dto.type === MovementType.OUT && product.stock < dto.quantity) {
+        throw new BadRequestException('Stock insuficiente.');
+      }
+
+      product.stock += dto.type === MovementType.IN ? dto.quantity : -dto.quantity;
+      await manager.save(product);
+
+      return manager.save(
+        manager.create(StockMovement, {
+          product: { id: product.id },
+          type: dto.type,
+          quantity: dto.quantity,
+          reason: dto.reason,
+          user: { id: userId },
+        }),
       );
-      if (!done) throw new BadRequestException('Stock insuficiente.');
-    } else {
-      await this.productsRepository.adjustStock(dto.productId, dto.quantity);
-    }
-    
-    const movement = this.stockRepository.create({
-      product,
-      type: dto.type,
-      quantity: dto.quantity,
-      reason: dto.reason,
-      user: { id: userId },
     });
-    return this.stockRepository.save(movement);
   }
 
   historyByProduct(productId: number) {

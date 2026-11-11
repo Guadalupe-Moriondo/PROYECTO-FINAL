@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEmail } from 'class-validator';
+import { IsOptional, IsString, IsEmail, Matches} from 'class-validator';
 
 export class UpdateProfileDto {
 
@@ -12,5 +12,6 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^[0-9]{8,15}$/, { message: 'El teléfono debe tener entre 8 y 15 dígitos, sin espacios ni guiones.' })
   phone?: string;
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { ProductsRepository } from './products.repository';
@@ -6,6 +6,9 @@ import { CategoriesRepository } from '../categories/categories.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductFilterDto } from './dto/product-filter.dto';
+import { DataSource } from 'typeorm';
+import { Product } from './entities/product.entity';
+import { StockMovement, MovementType } from './entities/stock-movement.entity';
 import { buildPaginatedResult, PaginationQueryDto } from '../common/pagination';
 
 @Injectable()
@@ -13,15 +16,36 @@ export class ProductsService {
   constructor(
     private readonly productsRepository: ProductsRepository,
     private readonly categoriesRepository: CategoriesRepository,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto, userId: number) {
     const category = await this.categoriesRepository.findOneBy({ id: dto.categoryId });
-    if (!category) {
+    if (!category || !category.active) {
       throw new NotFoundException(`Category with id ${dto.categoryId} not found`);
     }
-    const product = this.productsRepository.create({ ...dto, category });
-    return this.productsRepository.save(product);
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const saved = await manager.save(manager.create(Product, { ...dto, category }));
+        if ((dto.stock ?? 0) > 0) {
+          await manager.save(
+            manager.create(StockMovement, {
+              product: { id: saved.id },
+              type: MovementType.IN,
+              quantity: dto.stock,
+              reason: 'Stock inicial',
+              user: { id: userId },
+            }),
+          );
+        }
+        return saved;
+      });
+    } catch (e: any) {
+      if (e?.code === 'ER_DUP_ENTRY') {
+        throw new ConflictException('Ya existe un producto con ese código');
+      }
+      throw e;
+    }
   }
 
   async findAll(pagination: PaginationQueryDto) {
@@ -51,17 +75,32 @@ export class ProductsService {
     return product;
   }
 
+  async findOnePublic(id: number) {
+    const product = await this.findOne(id);
+    if (!product.active) {
+      throw new NotFoundException(`Product with id ${id} not found`);
+    }
+    return product;
+  }
+
   async update(id: number, dto: UpdateProductDto) {
     const product = await this.findOne(id);
     if (dto.categoryId) {
       const category = await this.categoriesRepository.findOneBy({ id: dto.categoryId });
-      if (!category) {
+      if (!category || !category.active) {
         throw new NotFoundException(`Category with id ${dto.categoryId} not found`);
       }
       product.category = category;
     }
     Object.assign(product, dto);
-    return this.productsRepository.save(product);
+    try {
+      return await this.productsRepository.save(product);
+    } catch (e: any) {
+      if (e?.code === 'ER_DUP_ENTRY') {
+        throw new ConflictException('Ya existe un producto con ese código');
+      }
+      throw e;
+    }
   }
 
 

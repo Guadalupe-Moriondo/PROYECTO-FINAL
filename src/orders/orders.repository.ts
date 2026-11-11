@@ -89,17 +89,17 @@ export class OrdersRepository extends Repository<Order> {
       const [y, m] = month.split('-').map(Number);
       const start = new Date(y, m - 1, 1, 0, 0, 0, 0);
       const end = new Date(y, m, 1, 0, 0, 0, 0);
-      where.createdAt = Between(start, new Date(end.getTime() - 1));
+      where.deliveredAt = Between(start, new Date(end.getTime() - 1));
     } else if (year) {
       const y = Number(year);
       const start = new Date(y, 0, 1, 0, 0, 0, 0);
       const end = new Date(y + 1, 0, 1, 0, 0, 0, 0);
-      where.createdAt = Between(start, new Date(end.getTime() - 1));
+      where.deliveredAt =Between(start, new Date(end.getTime() - 1));
     }
 
     return this.findAndCount({
       where,
-      order: { createdAt: 'DESC' },
+      order: { deliveredAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });

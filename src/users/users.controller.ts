@@ -7,6 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import {DefaultValuePipe} from '@nestjs/common/pipes/default-value.pipe';
 
 @Controller('users')
 export class UsersController {
@@ -27,15 +28,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   findAll(
-      @Query('page') page = 1,
-      @Query('search') search = '',
-      @Query('role') role = 'all',
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('search') search = '',
+    @Query('role') role = 'all',
   ) {
-      return this.usersService.findAll(
-          Number(page),
-          search,
-          role,
-      );
+    return this.usersService.findAll(page, search, role);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

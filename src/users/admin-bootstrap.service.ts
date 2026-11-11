@@ -27,6 +27,14 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       return;
     }
 
+    const currentOwner = await this.usersRepository.findOneBy({ owner: true });
+    if (currentOwner && currentOwner.email !== email) {
+      this.logger.warn(
+        `Ya existe un Super Administrador (${currentOwner.email}). ADMIN_EMAIL actual ignorado.`,
+      );
+      return;
+    }
+
     const existing = await this.usersRepository.findByEmail(email);
 
     if (existing) {

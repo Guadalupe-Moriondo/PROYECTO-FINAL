@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString,} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../../common/pagination';
 
 export class ProductFilterDto extends PaginationQueryDto {
@@ -23,7 +24,7 @@ export class ProductFilterDto extends PaginationQueryDto {
   maxPrice?: number;
 
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
-  available?: boolean; 
+  available?: boolean;
 }
