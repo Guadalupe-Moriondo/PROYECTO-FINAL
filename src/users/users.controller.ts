@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch , Put, Req, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch , Put, Req, UseGuards, Query, DefaultValuePipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -7,7 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import {DefaultValuePipe} from '@nestjs/common/pipes/default-value.pipe';
+
 
 @Controller('users')
 export class UsersController {

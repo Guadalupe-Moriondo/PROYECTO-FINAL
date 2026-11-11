@@ -383,6 +383,8 @@ export class OrdersService {
 
     const order = await this.findOne(id);
 
+    if (order.status !== OrderStatus.WITHDRAW) {throw new BadRequestException('Solo se puede notificar un pedido listo para retirar.');}
+
     order.customerNotified = true;
     order.notificationMethod = method;
     order.customerNotifiedAt = new Date();
