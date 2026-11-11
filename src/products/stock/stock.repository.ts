@@ -41,6 +41,9 @@ export class StockRepository extends Repository<StockMovement> {
           OR DATE_FORMAT(movement.createdAt, '%d/%m/%Y') LIKE :search
           OR (movement.type = :inType AND 'entrada' LIKE :search)
           OR (movement.type = :outType AND 'salida' LIKE :search)
+          OR LOWER(mUser.name) LIKE :search
+          OR LOWER(mOrder.orderNumber) LIKE :search
+
         )`,
         {
           search: `%${term}%`,
