@@ -2,10 +2,10 @@ import { IsEmail, IsNotEmpty, IsString, MinLength,Matches } from 'class-validato
 
 export class CreateUserDto {
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El nombre es obligatorio.' })
   name!: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: 'El correo electrónico no es válido.' })
   email!: string;
 
   @IsString()

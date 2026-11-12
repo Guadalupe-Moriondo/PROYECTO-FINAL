@@ -15,7 +15,7 @@ export class UsersService {
   async create(dto: CreateUserDto) {
     const existing = await this.usersRepository.findByEmail(dto.email);
     if (existing) {
-      throw new ConflictException('Correo electrónico inválido');
+      throw new ConflictException('El correo ya está registrado');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);

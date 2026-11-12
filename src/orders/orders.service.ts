@@ -335,7 +335,7 @@ export class OrdersService {
             product: { id: detail.product.id },
             type: MovementType.IN,
             quantity: detail.quantity,
-            reason: `Cancelación pedido ${order.orderNumber}`,
+            reason: `Cancelación pedido`,
             user: { id: requester.id },
             order: { id: order.id },
           }),

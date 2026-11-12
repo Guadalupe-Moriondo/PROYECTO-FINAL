@@ -56,7 +56,7 @@ export class CartService {
     const cart = await this.getOrCreate(userId);
     const item = cart.items.find((i) => i.id === itemId);
 
-    if (!item) throw new NotFoundException('Item not found in cart');
+    if (!item) throw new NotFoundException('Artículo no encontrado en el carrito');
     if (!Number.isInteger(quantity) || quantity <= 0) {throw new BadRequestException('La cantidad debe ser un número entero mayor a cero');}
     if (quantity > item.quantity) {
       if (!item.product.active) {

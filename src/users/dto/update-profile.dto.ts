@@ -7,7 +7,7 @@ export class UpdateProfileDto {
   name?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'El correo electrónico no es válido.' })
   email?: string;
 
   @IsOptional()

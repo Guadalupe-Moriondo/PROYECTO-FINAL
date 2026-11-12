@@ -2,11 +2,11 @@ import {IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString
 
 export class CreateProductDto {
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El código es obligatorio.' })
   code!: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El nombre es obligatorio.' })
   name!: string;
 
   @IsString()
@@ -17,17 +17,17 @@ export class CreateProductDto {
   @IsOptional()
   machineryCompatibility?: string;
 
-  @IsNumber()
-  @IsPositive()
+  @IsNumber({}, { message: 'El precio debe ser un número.' })
+  @IsPositive({ message: 'El precio debe ser mayor a 0.' })
   price!: number;
 
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'El stock debe ser un número entero.' })
+  @Min(0, { message: 'El stock no puede ser negativo.' })
   @IsOptional()
   stock?: number;
 
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'El stock mínimo debe ser un número entero.' })
+  @Min(0, { message: 'El stock mínimo no puede ser negativo.' })
   @IsOptional()
   minStock?: number;
 
@@ -39,6 +39,6 @@ export class CreateProductDto {
   @IsOptional()
   active?: boolean;
 
-  @IsInt()
+  @IsInt({ message: 'Debés seleccionar una categoría.' })
   categoryId!: number;
 }
