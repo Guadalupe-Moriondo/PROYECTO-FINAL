@@ -52,21 +52,15 @@ export class UsersService {
       this.usersRepository.createQueryBuilder('user');
 
     if (search) {
-
       query.andWhere(
-        `
-        user.name LIKE :search
-        OR user.email LIKE :search
-        `,
+        '(user.name LIKE :search OR user.email LIKE :search)',
         { search: `%${search}%` },
       );
-
     }
+
     if (role !== 'all') {
       query.andWhere(
-        `
-        user.role = :role
-        `,
+        `user.role = :role`,
         { role },
       );
 
@@ -97,26 +91,12 @@ export class UsersService {
       });
 
     return {
-
-      items: items.map(user => {
-
-        const {
-          passwordHash,
-          ...safeUser
-        } = user;
-
-        return safeUser;
-
-      }),
-
+      data: items.map(({ passwordHash, ...safeUser }) => safeUser),
       total,
       page,
       limit,
-      statistics: {
-        totalUsers,
-        totalAdmins,
-        totalCustomers,
-      },
+      totalPages: Math.ceil(total / limit),
+      statistics: { totalUsers, totalAdmins, totalCustomers },
     };
   }
 

@@ -70,12 +70,16 @@ export class OrdersService {
         });
       }
 
+      const total = Math.round(
+        details.reduce((acc, d) => acc + Number(d.unitPrice) * d.quantity, 0) * 100,
+      ) / 100;
+
       const orderNumber = `ORD-${Date.now()}-${randomInt(1000, 10000)}`;
       const order = ordersRepo.create({
         user: { id: userId } as any,
         orderNumber,
         paymentMethod: dto.paymentMethod,
-        total: cartWithTotals.total,
+        total: total,
         details: details as any,
       });
       const saved = await ordersRepo.save(order);

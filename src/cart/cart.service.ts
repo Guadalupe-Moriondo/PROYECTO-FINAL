@@ -58,8 +58,14 @@ export class CartService {
 
     if (!item) throw new NotFoundException('Item not found in cart');
     if (!Number.isInteger(quantity) || quantity <= 0) {throw new BadRequestException('La cantidad debe ser un número entero mayor a cero');}
-    if (!item.product.active) {throw new BadRequestException('El producto ya no está disponible');}
-    if (quantity > item.product.stock) {throw new BadRequestException('Stock insuficiente');}
+    if (quantity > item.quantity) {
+      if (!item.product.active) {
+        throw new BadRequestException('El producto ya no está disponible');
+      }
+      if (quantity > item.product.stock) {
+        throw new BadRequestException('Stock insuficiente');
+      }
+    }
     
     item.quantity = quantity;
 
@@ -78,6 +84,7 @@ export class CartService {
   private calculateTotals(cart: Cart) {
     const items = cart.items.map((item) => ({
       ...item,
+      unavailable: !item.product.active || item.product.stock < item.quantity,
       subtotal: Number(item.product.price) * item.quantity,
     }));
     const total = items.reduce((acc, item) => acc + item.subtotal, 0);
