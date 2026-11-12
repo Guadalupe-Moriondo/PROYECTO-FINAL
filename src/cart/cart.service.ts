@@ -27,22 +27,22 @@ export class CartService {
 
   async addItem(userId: number, dto: AddItemDto) {
     const product = await this.productsRepository.findOneBy({ id: dto.productId, active:true, });
-    if (!product) throw new NotFoundException('Product not found');
-    if (product.stock < dto.quantity) {throw new BadRequestException('Insufficient stock');}
 
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    if (product.stock < dto.quantity) {throw new BadRequestException('Stock insuficiente');}
 
     const cart = await this.getOrCreate(userId);
     const existingItem = cart.items.find((i) => i.product.id === dto.productId);
 
     if (existingItem) {
     if (existingItem.quantity + dto.quantity > product.stock) {
-      throw new BadRequestException('Insufficient stock');
+      throw new BadRequestException('Stock insuficiente');
     }
 
     existingItem.quantity += dto.quantity;
     } else {
     if (dto.quantity > product.stock) {
-      throw new BadRequestException('Insufficient stock');
+      throw new BadRequestException('Stock insuficiente');
     }
 
     cart.items.push({ product, quantity: dto.quantity } as any);
@@ -55,13 +55,16 @@ export class CartService {
   async updateQuantity(userId: number, itemId: number, quantity: number) {
     const cart = await this.getOrCreate(userId);
     const item = cart.items.find((i) => i.id === itemId);
+
     if (!item) throw new NotFoundException('Item not found in cart');
     if (!Number.isInteger(quantity) || quantity <= 0) {throw new BadRequestException('La cantidad debe ser un número entero mayor a cero');}
-    if (!item.product.active) {throw new BadRequestException('Product is no longer available');}
-    if (quantity > item.product.stock) {throw new BadRequestException('Insufficient stock');}
+    if (!item.product.active) {throw new BadRequestException('El producto ya no está disponible');}
+    if (quantity > item.product.stock) {throw new BadRequestException('Stock insuficiente');}
     
     item.quantity = quantity;
+
     const saved = await this.cartRepository.save(cart);
+
     return this.calculateTotals(saved);
   }
 

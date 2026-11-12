@@ -17,17 +17,15 @@ export class CategoriesService {
   async findAll(pagination: PaginationQueryDto) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
-
     const [data, total] =
       await this.categoriesRepository.findAllPaginated(page, limit);
-
     return buildPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: number) {
     const category = await this.categoriesRepository.findOneBy({ id });
     if (!category) {
-      throw new NotFoundException(`Category with id ${id} not found`);
+      throw new NotFoundException(`No se encontró la categoría con ID ${id}`);
     }
     return category;
   }
@@ -42,9 +40,7 @@ export class CategoriesService {
     const category = await this.findOne(id);
 
     if (Number(category.productCount) > 0) {
-      throw new BadRequestException(
-        'No se puede dar de baja la categoría porque tiene productos activos asociados. Reasignalos o dalos de baja primero.',
-      );
+      throw new BadRequestException('No se puede dar de baja la categoría porque tiene productos activos asociados. Reasignalos o dalos de baja primero.',);
     }
 
     category.active = false;

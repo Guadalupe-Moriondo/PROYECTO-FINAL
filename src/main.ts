@@ -24,11 +24,11 @@ class AllExceptionsFilter implements ExceptionFilter {
       message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
-          : (exceptionResponse as any).message || 'Unexpected error';
+          : (exceptionResponse as any).message || 'Error inesperado';
     } else {
 
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'An internal error occurred. Please try again later.';
+      message = 'Se ha producido un error interno. Por favor, inténtalo de nuevo más tarde.';
 
       this.logger.error(
         `${request.method} ${request.url}`,

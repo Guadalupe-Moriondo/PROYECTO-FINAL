@@ -146,22 +146,10 @@ export class OrdersRepository extends Repository<Order> {
           OR (order.cancelledBy = 'admin' AND 'administrador' LIKE :search)
           OR (order.cancelledBy = 'customer' AND 'cliente' LIKE :search)
           ${onlyCancelled ? 'OR LOWER(cancelledByUser.name) LIKE :search' : ''}
-          OR (
-            order.status = :pending
-            AND 'pendiente' LIKE :search
-          )
-          OR (
-            order.status = :confirmed
-            AND 'confirmado' LIKE :search
-          )
-          OR (
-            order.status = :inPreparation
-            AND 'en preparacion' LIKE :search
-          )
-          OR (
-            order.status = :withdraw
-            AND 'retirar' LIKE :search
-          )
+          OR (order.status = :pending AND 'pendiente' LIKE :search)
+          OR (order.status = :confirmed AND 'confirmado' LIKE :search)
+          OR (order.status = :inPreparation AND 'en preparacion' LIKE :search)
+          OR (order.status = :withdraw AND 'retirar' LIKE :search)
         )`,
         {
           search: `%${search}%`,

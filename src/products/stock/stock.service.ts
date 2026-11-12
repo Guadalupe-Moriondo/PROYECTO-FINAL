@@ -52,7 +52,6 @@ export class StockService {
   async history(filters: MovementFilterDto) {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 10;
-
     const [data, total] = await this.stockRepository.findAllPaginated(
       page,
       limit,

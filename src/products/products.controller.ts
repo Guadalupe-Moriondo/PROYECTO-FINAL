@@ -62,7 +62,7 @@ export class ProductsController {
       fileFilter: (_req, file, callback) => {
         if (!ALLOWED_IMAGE_TYPES.test(extname(file.originalname))) {
           return callback(
-            new BadRequestException('Only .jpg, .jpeg, .png or .webp images are allowed'),
+            new BadRequestException('Solo se permiten imágenes en formato .jpg, .jpeg, .png o .webp.'),
             false,
           );
         }

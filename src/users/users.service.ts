@@ -138,8 +138,6 @@ export class UsersService {
       throw new ForbiddenException('Solo el Super Administrador puede cambiar roles.');
     }
 
-
-
     const user = await this.usersRepository.findOneBy({ id });
 
     if (!user) {
@@ -154,9 +152,7 @@ export class UsersService {
       user.id === requestedBy.id &&
       newRole !== UserRole.ADMIN
     ) {
-      throw new ConflictException(
-        'No puedes quitarte tu propio rol de administrador.'
-      );
+      throw new ConflictException('No puedes quitarte tu propio rol de administrador.');
     }
 
     if (
@@ -171,9 +167,7 @@ export class UsersService {
       });
 
       if (admins <= 1) {
-        throw new ConflictException(
-          'Debe existir al menos un administrador activo.'
-        );
+        throw new ConflictException('Debe existir al menos un administrador activo.');
       }
     }
 
@@ -241,18 +235,14 @@ export class UsersService {
     );
 
     if (samePassword) {
-      throw new ConflictException(
-        'La nueva contraseña debe ser diferente a la actual',
-      );
+      throw new ConflictException('La nueva contraseña debe ser diferente a la actual',);
     }
 
     user.passwordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
 
     await this.usersRepository.save(user);
 
-    return {
-      message: 'Contraseña actualizada correctamente',
-    };
+    return {message: 'Contraseña actualizada correctamente',};
   }
 
 }

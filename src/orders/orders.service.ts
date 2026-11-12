@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { randomInt } from 'crypto';
 import { OrdersRepository } from './orders.repository';
 import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
@@ -16,7 +17,7 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { buildPaginatedResult, PaginationQueryDto } from '../common/pagination';
 import { OrderStatus } from './entities/order.entity';
 import { OrderFilterDto } from './dto/order-filter.dto';
-import { randomInt } from 'crypto';
+
 
 @Injectable()
 export class OrdersService {
@@ -30,7 +31,7 @@ export class OrdersService {
   async createFromCart(userId: number, dto: CreateOrderDto) {
     const cartWithTotals = await this.cartService.viewCart(userId);
     if (cartWithTotals.items.length === 0) {
-      throw new BadRequestException('The cart is empty');
+      throw new BadRequestException('El carrito está vacío.');
     }
 
     const sortedItems = [...cartWithTotals.items].sort((a, b) => a.product.id - b.product.id);
@@ -38,7 +39,6 @@ export class OrdersService {
       const productsRepo = manager.getRepository(Product);
       const ordersRepo = manager.getRepository(Order);
       const cartsRepo = manager.getRepository(Cart);
-
       const details: { product: Product; quantity: number; unitPrice: number }[] = [];
       const soldItems: { productId: number; quantity: number }[] = [];
 
@@ -51,13 +51,11 @@ export class OrdersService {
           .getOne();
 
         if (!product) {
-          throw new NotFoundException(`Product ${item.product.name} no longer exists`);
+          throw new NotFoundException(`El producto ${item.product.name} ya no existe.`);
         }
 
         if (product.stock < item.quantity) {
-          throw new BadRequestException(
-            `Insufficient stock for ${product.name}. Available: ${product.stock}`,
-          );
+          throw new BadRequestException(`Stock insuficiente para ${product.name}. Disponible: ${product.stock}`,);
         }
 
         product.stock -= item.quantity;
@@ -156,14 +154,14 @@ export class OrdersService {
 
   async findOne(id: number) {
     const order = await this.ordersRepository.findOneBy({ id });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order) throw new NotFoundException('Orden no encontrada.');
     return order;
   }
 
   async findOneForUser(id: number, user: { id: number; role: string }) {
     const order = await this.findOne(id);
     if (user.role !== 'admin' && order.user.id !== user.id) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Orden no encontrada.'); 
     }
     return order;
   }
@@ -171,9 +169,7 @@ export class OrdersService {
   async search(filters: OrderFilterDto) {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 10;
-
     const [data, total] = await this.ordersRepository.searchWithFilters(filters);
-
     return buildPaginatedResult(data, total, page, limit);
   }
 
@@ -183,8 +179,6 @@ export class OrdersService {
   ) {
     const order = await this.findOne(id);
 
-    // Los administradores pueden consultar cualquier pedido.
-    // Los clientes solamente pueden consultar sus propios pedidos.
     if (requester.role !== 'admin' && order.user?.id !== requester.id) {
       throw new ForbiddenException('No tenés permiso para consultar este historial.');
     }
@@ -225,9 +219,7 @@ export class OrdersService {
     const expectedNextStatus = nextStatus[order.status];
 
     if (order.status === OrderStatus.DELIVERED) {
-      throw new BadRequestException(
-        'El pedido ya fue entregado y no puede cambiar de estado.',
-      );
+      throw new BadRequestException('El pedido ya fue entregado y no puede cambiar de estado.',);
     }
 
     if (order.status === OrderStatus.CANCELLED) {
@@ -235,18 +227,13 @@ export class OrdersService {
     }
 
     if (dto.status !== expectedNextStatus) {
-      throw new BadRequestException(
-        `No se puede pasar de "${order.status}" a "${dto.status}".`,
-      );
+      throw new BadRequestException(`No se puede pasar de "${order.status}" a "${dto.status}".`,);
     }
 
     if (
-      dto.status === OrderStatus.DELIVERED &&
-      !order.customerNotified
+      dto.status === OrderStatus.DELIVERED && !order.customerNotified
     ) {
-      throw new BadRequestException(
-        'No se puede marcar el pedido como entregado porque el cliente todavía no fue notificado.',
-      );
+      throw new BadRequestException('No se puede marcar el pedido como entregado porque el cliente todavía no fue notificado.',);
     }
 
     const previousStatus = order.status;
@@ -265,9 +252,7 @@ export class OrdersService {
       );
 
       if (!result.affected) {
-        throw new BadRequestException(
-          'El pedido cambió de estado mientras lo modificabas. Actualizá la pantalla.',
-        );
+        throw new BadRequestException('El pedido cambió de estado mientras lo modificabas. Actualizá la pantalla.');
       }
 
       await manager.save(
@@ -320,7 +305,7 @@ export class OrdersService {
         loadEagerRelations: false,
         relations: { user: true },
       });
-      if (!order) throw new NotFoundException('Order not found');
+      if (!order) throw new NotFoundException('Orden no encontrada.');
 
       const isAdmin = requester.role === 'admin';
       if (!isAdmin && order.user.id !== requester.id) {
@@ -383,7 +368,9 @@ export class OrdersService {
 
     const order = await this.findOne(id);
 
-    if (order.status !== OrderStatus.WITHDRAW) {throw new BadRequestException('Solo se puede notificar un pedido listo para retirar.');}
+    if (order.status !== OrderStatus.WITHDRAW) {
+      throw new BadRequestException('Solo se puede notificar un pedido listo para retirar.');
+    }
 
     order.customerNotified = true;
     order.notificationMethod = method;

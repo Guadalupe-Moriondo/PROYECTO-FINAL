@@ -18,7 +18,6 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   machineryCompatibility!: string;
 
-
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price!: number;
 

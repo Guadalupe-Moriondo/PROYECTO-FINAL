@@ -21,17 +21,13 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
     const name = this.configService.get<string>('ADMIN_SEED_NAME') || 'Administrador';
 
     if (!email || !password) {
-      this.logger.warn(
-        'ADMIN_EMAIL and/or ADMIN_SEED_PASSWORD not configured: automatic admin creation skipped.',
-      );
+      this.logger.warn('ADMIN_EMAIL y/o ADMIN_SEED_PASSWORD no configurados. No se creará un usuario administrador automáticamente.');
       return;
     }
 
     const currentOwner = await this.usersRepository.findOneBy({ owner: true });
     if (currentOwner && currentOwner.email !== email) {
-      this.logger.warn(
-        `Ya existe un Super Administrador (${currentOwner.email}). ADMIN_EMAIL actual ignorado.`,
-      );
+      this.logger.warn(`Ya existe un Super Administrador (${currentOwner.email}). ADMIN_EMAIL actual ignorado.`);
       return;
     }
 
@@ -47,7 +43,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
 
           await this.usersRepository.save(existing);
 
-          this.logger.log(`User ${email} promoted to owner admin.`);
+          this.logger.log(`Usuario ${email} ascendido a administrador propietario.`);
       }
       return;
     }
@@ -61,6 +57,6 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       owner: true,
     });
     await this.usersRepository.save(admin);
-    this.logger.log(`Admin user automatically created: ${email}`);
+    this.logger.log(`Usuario administrador creado automáticamente: ${email}`);
   }
 }

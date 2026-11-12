@@ -22,7 +22,7 @@ export class ProductsService {
   async create(dto: CreateProductDto, userId: number) {
     const category = await this.categoriesRepository.findOneBy({ id: dto.categoryId });
     if (!category || !category.active) {
-      throw new NotFoundException(`Category with id ${dto.categoryId} not found`);
+      throw new NotFoundException(`No se encontró la categoría con ID ${dto.categoryId}`);
     }
     try {
       return await this.dataSource.transaction(async (manager) => {
@@ -70,7 +70,7 @@ export class ProductsService {
       },
     });
     if (!product) {
-      throw new NotFoundException(`Product with id ${id} not found`);
+      throw new NotFoundException(`No se encontró el producto con ID ${id}`);
     }
     return product;
   }
@@ -78,7 +78,7 @@ export class ProductsService {
   async findOnePublic(id: number) {
     const product = await this.findOne(id);
     if (!product.active) {
-      throw new NotFoundException(`Product with id ${id} not found`);
+      throw new NotFoundException(`No se encontró el producto con ID ${id}`);
     }
     return product;
   }
@@ -88,7 +88,7 @@ export class ProductsService {
     if (dto.categoryId) {
       const category = await this.categoriesRepository.findOneBy({ id: dto.categoryId });
       if (!category || !category.active) {
-        throw new NotFoundException(`Category with id ${dto.categoryId} not found`);
+        throw new NotFoundException(`No se encontró la categoría con ID ${dto.categoryId} `);
       }
       product.category = category;
     }
@@ -103,7 +103,6 @@ export class ProductsService {
     }
   }
 
-
   async remove(id: number) {
     const product = await this.findOne(id);
     product.active = false;
@@ -112,7 +111,7 @@ export class ProductsService {
 
   async updateImage(id: number, file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('No image file was received');
+      throw new BadRequestException('No se recibió ningún archivo de imagen');
     }
 
     const product = await this.findOne(id);

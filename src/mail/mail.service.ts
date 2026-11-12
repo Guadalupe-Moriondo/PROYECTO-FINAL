@@ -29,16 +29,16 @@ export class MailService {
         subject: subject,
         html,
       });
-      this.logger.log(`Email sent to ${recipient}: ${subject}`);
+      this.logger.log(`Email enviado a ${recipient}: ${subject}`);
     } catch (error) {
-      this.logger.error(`Error sending email to ${recipient}`, error);
+      this.logger.error(`Error al enviar el email a ${recipient}`, error);
     }
   }
 
   async notifyNewOrder(order: Order) {
     const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
     if (!adminEmail) {
-      this.logger.warn('ADMIN_EMAIL not configured, notification not sent');
+      this.logger.warn('ADMIN_EMAIL no configurado, no se ha enviado la notificación.');
       return;
     }
 
@@ -48,8 +48,7 @@ export class MailService {
       card: 'Tarjeta',
     };
 
-    const paymentMethodLabel =
-      paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod;
+    const paymentMethodLabel = paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod;
     
     const detailRows = order.details
       .map(
